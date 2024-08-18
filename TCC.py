@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from VAE import VAE
+from VAE_2 import VAE
 
 # Parâmetros
 dim_1 = 100; dim_2 = 100; dim_3 = 1     # Dimensões dos dados de entrada
