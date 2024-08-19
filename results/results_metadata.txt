@@ -3,7 +3,7 @@ Audio Path: ./audio/ethereal.ogg
 Audio Duration: 5
 Audio Rate: 9000 
 Latent Dim: 2
-Batch Size: 1
+Batch Size: -
 Epochs: 50
 Best Epoch: -
 Loss: -
@@ -16,7 +16,7 @@ Audio Path: ./audio/ethereal.ogg
 Audio Duration: 7
 Audio Rate: 22050
 Latent Dim: 2
-Batch Size: 1
+Batch Size: -
 Epochs: 50
 Best Epoch: -
 Loss: -
@@ -29,7 +29,7 @@ Audio Path: ./audio/ethereal.ogg
 Audio Duration: 7
 Audio Rate: 22500
 Latent Dim: 16
-Batch Size: 1
+Batch Size: -
 Epochs: 50
 Best Epoch: 46
 Loss: 0.011141976341605186
@@ -42,11 +42,24 @@ Audio Path: ./audio/ethereal.ogg
 Audio Duration: 7
 Audio Rate: 5000
 Latent Dim: 32
-Batch Size: 1
+Batch Size: -
 Epochs: 100
 Best Epoch: 98
 Loss: 0.003170914715155959
 Reconstruction Loss: 0.0031653118785470724
 KL Loss: 5.602836608886719e-06
 Execution Time: 1954.20 seconds
+__________________________________________________
+ID: WB2652
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 5000
+Latent Dim: 128
+Batch Size: -
+Epochs: 10
+Best Epoch: 10
+Loss: 0.009474434889853
+Reconstruction Loss: 0.009355940856039524
+KL Loss: 0.00011849403381347656
+Execution Time: 110.99 seconds
 __________________________________________________

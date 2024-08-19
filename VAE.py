@@ -2,10 +2,13 @@ import tensorflow as tf
 from tensorflow.keras import layers
 
 class VAE(tf.keras.Model):
-    def __init__(self, input_shape, latent_dim, hidden_dims=None):
+    def __init__(self, input_shape, latent_dim, hidden_dims=None, id=None, duration=None, rate=None):
         super(VAE, self).__init__()
         self.latent_dim = latent_dim
         self.input_shape = input_shape
+        self.id = id
+        self.duration = duration
+        self.rate = rate
 
         if hidden_dims is None:
             hidden_dims = [32, 64, 128, 256, 512]
@@ -18,7 +21,7 @@ class VAE(tf.keras.Model):
         self.encoder = tf.keras.Sequential()
         self.encoder.add(layers.InputLayer(input_shape=(self.input_shape[1], 1)))
         for h_dim in self.hidden_dims:
-            self.encoder.add(layers.Conv1D(h_dim, kernel_size=5, strides=1, padding='same'))
+            self.encoder.add(layers.Conv1D(h_dim, kernel_size=7, strides=3, padding='same'))
             self.encoder.add(layers.BatchNormalization())
             self.encoder.add(layers.LeakyReLU())
 
@@ -39,11 +42,11 @@ class VAE(tf.keras.Model):
         self.decoder.add(layers.Reshape((self.input_shape[1] // factor, self.hidden_dims[-1])))
 
         for h_dim in self.hidden_dims[::-1]:
-            self.decoder.add(layers.Conv1DTranspose(h_dim, kernel_size=5, strides=2, padding='same'))
+            self.decoder.add(layers.Conv1DTranspose(h_dim, kernel_size=7, strides=3, padding='same'))
             self.decoder.add(layers.BatchNormalization())
             self.decoder.add(layers.LeakyReLU())
 
-        self.decoder.add(layers.Conv1DTranspose(1, kernel_size=3, strides=1, padding='same'))
+        self.decoder.add(layers.Conv1DTranspose(1, kernel_size=5, strides=1, padding='same'))
 
         # Ensure final output shape matches input shape
         if self.decoder.output_shape[1] < self.input_shape[1]:
