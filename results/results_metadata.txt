@@ -89,3 +89,30 @@ Reconstruction Loss: 0.009358097799122334
 KL Loss: 0.00018599629402160645
 Execution Time: 92.37 seconds
 __________________________________________________
+ID: MO4323
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 5000
+Latent Dim: 128
+Batch Size: -
+Epochs: 1
+Best Epoch: 1
+Loss: 0.00977313332259655
+Reconstruction Loss: 0.009362367913126945
+KL Loss: 0.0004107654094696045
+Execution Time: 276.75 seconds
+__________________________________________________
+ID: HE2023
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 22050
+Latent Dim: 128
+Batch Size: -
+Epochs: 100
+Best Epoch: 82
+FAD: -
+Loss: 0.005737509578466415
+Reconstruction Loss: 0.005726363509893417
+KL Loss: 1.1146068572998047e-05
+Execution Time: 11486.08 seconds
+__________________________________________________

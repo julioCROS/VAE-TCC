@@ -22,3 +22,4 @@ def train_vae(vae, data, epochs, optimizer):
         if epoch % 10 == 0:
             save_intermediate_output(vae.id, epoch, output, vae.duration, vae.rate)
     return best_output
+
