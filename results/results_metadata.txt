@@ -63,3 +63,29 @@ Reconstruction Loss: 0.009355940856039524
 KL Loss: 0.00011849403381347656
 Execution Time: 110.99 seconds
 __________________________________________________
+ID: FM1798
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 5000
+Latent Dim: 128
+Batch Size: -
+Epochs: 10
+Best Epoch: 6
+Loss: 0.009572735987603664
+Reconstruction Loss: 0.009360424242913723
+KL Loss: 0.0002123117446899414
+Execution Time: 66.07 seconds
+__________________________________________________
+ID: YE7622
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 5000
+Latent Dim: 128
+Batch Size: -
+Epochs: 10
+Best Epoch: 8
+Loss: 0.00954409409314394
+Reconstruction Loss: 0.009358097799122334
+KL Loss: 0.00018599629402160645
+Execution Time: 92.37 seconds
+__________________________________________________

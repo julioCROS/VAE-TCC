@@ -16,7 +16,7 @@ audio_path = './audio/ethereal.ogg'            # Caminho do arquivo de áudio
 audio_data = AudioInfo(audio_path)             # Leitor de áudio
 latent_dim = 128                               # Dimensão do espaço latente
 batch_size = '-'                               # Tamanho do lote
-epochs = 10                                    # Número de épocas
+epochs = 5                                     # Número de épocas
 optimizer = tf.keras.optimizers.Adam()         # Otimizador
 
 # Dados de Treinamento                                                                      # Valores usados como referencia: 30s a 11000Hz = 330000

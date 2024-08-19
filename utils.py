@@ -1,5 +1,5 @@
 import numpy as np
-import tensorflow as tf
+import soundfile as sf
 
 def generate_random_id():
     return ''.join([chr(np.random.randint(65, 91)) for _ in range(2)]) + str(np.random.randint(1000, 9999))
@@ -26,7 +26,7 @@ def show_results(best_output, execution_time):
     print(f"\t- Tempo de execução: {execution_time} segundos")
 
 def save_metadata(id, path, duration, rate, latent_dim, batch_size, epochs, best_output, execution_time):
-    with open('./results/results_metadata.txt', 'w') as file:
+    with open('./results/results_metadata.txt', 'a') as file:
         file.write(f"ID: {id}\n")
         file.write(f"Audio Path: {path}\n")
         file.write(f"Audio Duration: {duration}\n")
