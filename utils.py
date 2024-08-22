@@ -1,3 +1,4 @@
+import librosa
 import numpy as np
 from scipy.linalg import sqrtm
 
@@ -20,8 +21,11 @@ def calculate_fad(input, output):
 def generate_random_id():
     return ''.join([chr(np.random.randint(65, 91)) for _ in range(2)]) + str(np.random.randint(1000, 9999))
 
-def save_result(type, data, id, duration, rate):
-    np.savetxt('./results/' + type + '_' +  id + '.txt' , data.reshape(duration * rate, ), fmt = "%f")
+def save_result(type, data, id, dim_1 = None, dim_2 = None):
+    if dim_1 is None or dim_2 is None:
+        np.savetxt('./results/' + type + '_' +  id + '.txt' , data, fmt = "%f")
+    else:
+        np.savetxt('./results/' + type + '_' +  id + '.txt' , data.reshape(dim_1 * dim_2, ), fmt = "%f")
 
 def save_intermediate_output(id, epoch, output, duration, rate):
     np.savetxt('./results/intermediate_output_' +  id + '_' + str(epoch) + '.txt', output.numpy().reshape(duration * rate, ), fmt = "%f")
@@ -31,6 +35,16 @@ def remove_intermediate_outputs(id):
     for file in os.listdir('./results'):
         if file.startswith('intermediate_output_' + id):
             os.remove('./results/' + file)
+
+def mel_spectrogram_db_to_audio(mel_spectrogram_db, sr, n_mels, n_fft=2048, hop_length=512):
+    mel_spectrogram_db = mel_spectrogram_db * np.std(mel_spectrogram_db) + np.mean(mel_spectrogram_db)
+    mel_spectrogram = librosa.db_to_power(mel_spectrogram_db)
+    mel_basis = librosa.filters.mel(sr, n_fft, n_mels=n_mels)
+    power_spectrogram = np.dot(mel_basis.T, mel_spectrogram)
+    magnitude_spectrogram = power_spectrogram
+    audio = librosa.griffinlim(magnitude_spectrogram, n_fft=n_fft, hop_length=hop_length)
+    
+    return audio
 
 def show_results(best_output, execution_time, fad):
     print("#" * 112)

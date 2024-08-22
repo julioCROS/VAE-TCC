@@ -19,13 +19,13 @@ class VAE(tf.keras.Model):
 
     def build_encoder(self):
         self.encoder = tf.keras.Sequential()
-        self.encoder.add(layers.InputLayer(input_shape=(self.input_shape[1], 1)))
+        self.encoder.add(layers.InputLayer(input_shape=(self.input_shape[1], self.input_shape[2], 1)))
         for h_dim in self.hidden_dims:
-            self.encoder.add(layers.Conv1D(h_dim, kernel_size=7, strides=3, padding='same'))
+            self.encoder.add(layers.Conv2D(h_dim, kernel_size=7, strides=3, padding='same'))
             self.encoder.add(layers.BatchNormalization())
             self.encoder.add(layers.LeakyReLU())
 
-        self.encoder.add(layers.GlobalAveragePooling1D())
+        self.encoder.add(layers.GlobalAveragePooling2D())
         self.encoder.add(layers.Dense(self.latent_dim * 2))
         
         self.fc_mu = layers.Dense(self.latent_dim)
@@ -36,27 +36,33 @@ class VAE(tf.keras.Model):
         self.decoder.add(layers.InputLayer(input_shape=(self.latent_dim,)))
 
         factor = 2 ** len(self.hidden_dims)
-        units = self.hidden_dims[-1] * (self.input_shape[1] // factor)
+        units = self.hidden_dims[-1] * (self.input_shape[1] // factor) * (self.input_shape[2] // factor)
 
         self.decoder.add(layers.Dense(units, activation='relu'))
-        self.decoder.add(layers.Reshape((self.input_shape[1] // factor, self.hidden_dims[-1])))
+        self.decoder.add(layers.Reshape((self.input_shape[1] // factor, self.input_shape[2] // factor, self.hidden_dims[-1])))
 
         for h_dim in self.hidden_dims[::-1]:
-            self.decoder.add(layers.Conv1DTranspose(h_dim, kernel_size=7, strides=3, padding='same'))
+            self.decoder.add(layers.Conv2DTranspose(h_dim, kernel_size=7, strides=(2,2), padding='same'))
             self.decoder.add(layers.BatchNormalization())
             self.decoder.add(layers.LeakyReLU())
 
-        self.decoder.add(layers.Conv1DTranspose(1, kernel_size=5, strides=1, padding='same'))
+        self.decoder.add(layers.Conv2DTranspose(1, kernel_size=5, strides=(1,1), padding='same'))
 
-        # Ensure final output shape matches input shape
         if self.decoder.output_shape[1] < self.input_shape[1]:
             padding_needed = self.input_shape[1] - self.decoder.output_shape[1]
-            self.decoder.add(layers.ZeroPadding1D(padding=(0, padding_needed)))
+            self.decoder.add(layers.ZeroPadding2D(padding=((padding_needed, 0), (0, 0))))
         elif self.decoder.output_shape[1] > self.input_shape[1]:
             cropping_needed = self.decoder.output_shape[1] - self.input_shape[1]
-            self.decoder.add(layers.Cropping1D(cropping=(0, cropping_needed)))
+            self.decoder.add(layers.Cropping2D(cropping=((cropping_needed, 0), (0, 0))))
+        
+        if self.decoder.output_shape[2] < self.input_shape[2]:
+            padding_needed = self.input_shape[2] - self.decoder.output_shape[2]
+            self.decoder.add(layers.ZeroPadding2D(padding=((0, 0), (padding_needed, 0))))
+        elif self.decoder.output_shape[2] > self.input_shape[2]:
+            cropping_needed = self.decoder.output_shape[2] - self.input_shape[2]
+            self.decoder.add(layers.Cropping2D(cropping=((0, 0), (cropping_needed, 0))))
 
-        self.decoder.add(layers.Reshape((self.input_shape[1], 1)))
+        self.decoder.add(layers.Reshape((self.input_shape[1], self.input_shape[2], 1)))
 
     def encode(self, input):
         x = self.encoder(input)
