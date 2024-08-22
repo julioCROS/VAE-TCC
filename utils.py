@@ -1,5 +1,6 @@
 import librosa
 import numpy as np
+import tensorflow as tf
 from scipy.linalg import sqrtm
 
 def calculate_fad(input, output):
@@ -46,18 +47,23 @@ def mel_spectrogram_db_to_audio(mel_spectrogram_db, sr, n_mels, n_fft=2048, hop_
     
     return audio
 
-def show_results(best_output, execution_time, fad):
+def show_results(output, execution_time, fad):
     print("#" * 112)
-    print("Melhor resultado: ")
-    print(f"\t- Epoca: {best_output[1] + 1}")
+    print("\nMelhor resultado: ")
+    print(f"\t- Epoca: {output[1] + 1}")
     print(f"\t- FAD: {fad}")
-    print(f"\t- Loss: {best_output[2].numpy()}")
-    print(f"\t- Reconstrução Loss: {best_output[3].numpy()}")
-    print(f"\t- KL Loss: {best_output[4].numpy()}")
+    print(f"\t- Loss: {output[2].numpy()}")
+    print(f"\t- Reconstrução Loss: {output[3].numpy()}")
+    print(f"\t- KL Loss: {output[4].numpy()}")
     print(f"\t- Tempo de execução: {execution_time} segundos")
 
-def save_metadata(id, path, duration, rate, latent_dim, batch_size, epochs, best_output, fad, execution_time):
-    with open('./results/results_metadata.txt', 'a') as file:
+def save_metadata(type, id, path, duration, rate, latent_dim, batch_size, epochs, output, execution_time, fad, mels = None):
+    metadata_file = None
+    if type is None:
+        metadata_file = './results/results_metadata.txt'
+    elif type == 'stg':
+        metadata_file = './results/results_spectrogram_metadata.txt'
+    with open(metadata_file, 'a') as file:
         file.write(f"ID: {id}\n")
         file.write(f"Audio Path: {path}\n")
         file.write(f"Audio Duration: {duration}\n")
@@ -65,10 +71,12 @@ def save_metadata(id, path, duration, rate, latent_dim, batch_size, epochs, best
         file.write(f"Latent Dim: {latent_dim}\n")
         file.write(f"Batch Size: {batch_size}\n")
         file.write(f"Epochs: {epochs}\n")
-        file.write(f"Best Epoch: {best_output[1]+1}\n")
+        if mels is not None:
+            file.write(f"Num. Mels: {mels}\n")
+        file.write(f"Best Epoch: {output[1]+1}\n")
         file.write(f"FAD: {fad}\n")
-        file.write(f"Loss: {best_output[2].numpy()}\n")
-        file.write(f"Reconstruction Loss: {best_output[3].numpy()}\n")
-        file.write(f"KL Loss: {best_output[4].numpy()}\n")
+        file.write(f"Loss: {output[2].numpy()}\n")
+        file.write(f"Reconstruction Loss: {output[3].numpy()}\n")
+        file.write(f"KL Loss: {output[4].numpy()}\n")
         file.write(f"Execution Time: {execution_time} seconds\n")
         file.write("_" * 50 + "\n")
