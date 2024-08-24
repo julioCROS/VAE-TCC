@@ -4,6 +4,9 @@ import tensorflow as tf
 from scipy.linalg import sqrtm
 
 def calculate_fad(input, output):
+    input = input.reshape(input.shape[0], -1)  
+    output = output.reshape(output.shape[0], -1)
+
     mu_input = np.mean(input, axis=0)
     sigma_input = np.cov(input, rowvar=False)
 
@@ -18,6 +21,15 @@ def calculate_fad(input, output):
 
     fad = np.sum(mu_diff**2) + np.trace(sigma_input + sigma_output - 2 * covmean)
     return fad
+
+def get_batches(data, num_batches):
+    new_dim1 = data.shape[0] // num_batches
+    if data.shape[0] % num_batches == 0:
+        data = data.reshape((num_batches, new_dim1, data.shape[1]))
+    else:
+        raise ValueError("A divisão não resulta em dimensões inteiras")
+    return data
+
 
 def generate_random_id():
     return ''.join([chr(np.random.randint(65, 91)) for _ in range(2)]) + str(np.random.randint(1000, 9999))
@@ -36,16 +48,6 @@ def remove_intermediate_outputs(id):
     for file in os.listdir('./results'):
         if file.startswith('intermediate_output_' + id):
             os.remove('./results/' + file)
-
-def mel_spectrogram_db_to_audio(mel_spectrogram_db, sr, n_mels, n_fft=2048, hop_length=512):
-    mel_spectrogram_db = mel_spectrogram_db * np.std(mel_spectrogram_db) + np.mean(mel_spectrogram_db)
-    mel_spectrogram = librosa.db_to_power(mel_spectrogram_db)
-    mel_basis = librosa.filters.mel(sr, n_fft, n_mels=n_mels)
-    power_spectrogram = np.dot(mel_basis.T, mel_spectrogram)
-    magnitude_spectrogram = power_spectrogram
-    audio = librosa.griffinlim(magnitude_spectrogram, n_fft=n_fft, hop_length=hop_length)
-    
-    return audio
 
 def show_results(output, execution_time, fad):
     print("#" * 112)

@@ -1,0 +1,240 @@
+ID: ZY6975
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 3000
+Latent Dim: 256
+Batch Size: -
+Epochs: 2
+Num. Mels: 1024
+Best Epoch: 1
+FAD: -
+Loss: 913.46826171875
+Reconstruction Loss: 853.1639404296875
+KL Loss: 60.304344177246094
+Execution Time: 18.97 seconds
+__________________________________________________
+ID: CQ6520
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 7
+Audio Rate: 11000
+Latent Dim: 128
+Batch Size: -
+Epochs: 300
+Num. Mels: 1024
+Best Epoch: 297
+FAD: -
+Loss: 169.3332061767578
+Reconstruction Loss: 165.48304748535156
+KL Loss: 3.850161075592041
+Execution Time: 2835.91 seconds
+__________________________________________________
+ID: VZ9835
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 64
+Batch Size: -
+Epochs: 500
+Num. Mels: 256
+Best Epoch: 499
+FAD: -
+Loss: 45.412261962890625
+Reconstruction Loss: 35.19233322143555
+KL Loss: 10.219930648803711
+Execution Time: 142.85 seconds
+__________________________________________________
+ID: WP3678
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 64
+Batch Size: -
+Epochs: 500
+Num. Mels: 512
+Best Epoch: 500
+FAD: -
+Loss: 73.92174530029297
+Reconstruction Loss: 64.11063385009766
+KL Loss: 9.811113357543945
+Execution Time: 446.61 seconds
+__________________________________________________
+ID: IY9576
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 64
+Batch Size: -
+Epochs: 500
+Num. Mels: 128
+Best Epoch: 500
+FAD: -
+Loss: 11.556538581848145
+Reconstruction Loss: 11.517424583435059
+KL Loss: 0.039113759994506836
+Execution Time: 273.69 seconds
+__________________________________________________
+ID: AK2772
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 32
+Batch Size: -
+Epochs: 500
+Num. Mels: 256
+Best Epoch: 500
+FAD: -
+Loss: 39.3699836730957
+Reconstruction Loss: 38.67726516723633
+KL Loss: 0.6927189826965332
+Execution Time: 2737.61 seconds
+__________________________________________________
+ID: SZ1587
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 16
+Batch Size: -
+Epochs: 500
+Num. Mels: 256
+Best Epoch: 500
+FAD: -
+Loss: 38.023128509521484
+Reconstruction Loss: 37.68537902832031
+KL Loss: 0.3377493619918823
+Execution Time: 2843.32 seconds
+__________________________________________________
+ID: OU1754
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 16
+Batch Size: -
+Epochs: 700
+Num. Mels: 512
+Best Epoch: 700
+FAD: -
+Loss: 39.45539855957031
+Reconstruction Loss: 35.10426330566406
+KL Loss: 4.351137161254883
+Execution Time: 5667.38 seconds
+__________________________________________________
+ID: WN9822
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 8
+Batch Size: -
+Epochs: 2
+Num. Mels: 512
+Best Epoch: 2
+FAD: -
+Loss: 476.97259521484375
+Reconstruction Loss: 237.17550659179688
+KL Loss: 239.79708862304688
+Execution Time: 79.13 seconds
+__________________________________________________
+ID: ZY2283
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 8
+Batch Size: -
+Epochs: 1
+Num. Mels: 512
+Best Epoch: 1
+FAD: 25830.006857139113
+Loss: 256.013671875
+Reconstruction Loss: 251.97869873046875
+KL Loss: 4.0349836349487305
+Execution Time: 45.87 seconds
+__________________________________________________
+ID: QW2716
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 128
+Batch Size: -
+Epochs: 700
+Num. Mels: 256
+Best Epoch: 700
+FAD: 1790.5250255271674
+Loss: 46.77894592285156
+Reconstruction Loss: 21.509450912475586
+KL Loss: 25.269493103027344
+Execution Time: 2363.52 seconds
+__________________________________________________
+ID: AU9972
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 128
+Batch Size: -
+Epochs: 700
+Num. Mels: 256
+Best Epoch: 698
+FAD: 1880.724840214518
+Loss: 28.649974822998047
+Reconstruction Loss: 23.160266876220703
+KL Loss: 5.489708423614502
+Execution Time: 2556.17 seconds
+__________________________________________________
+ID: VC6219
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 128
+Batch Size: -
+Epochs: 1
+Num. Mels: 256
+Best Epoch: 1
+FAD: 19404.883206079878
+Loss: 219.85690307617188
+Reconstruction Loss: 188.5423583984375
+KL Loss: 31.314550399780273
+Execution Time: 15.28 seconds
+__________________________________________________
+ID: GV6414
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 128
+Batch Size: -
+Epochs: 5
+Num. Mels: 256
+Best Epoch: 5
+FAD: 17660.667898655032
+Loss: 184.06509399414062
+Reconstruction Loss: 174.43807983398438
+KL Loss: 9.627017974853516
+Execution Time: 28.76 seconds
+__________________________________________________
+ID: QR6535
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 128
+Batch Size: -
+Epochs: 5
+Num. Mels: 256
+Best Epoch: 5
+FAD: 17706.00056621766
+Loss: 187.26263427734375
+Reconstruction Loss: 174.09442138671875
+KL Loss: 13.168209075927734
+Execution Time: 33.44 seconds
+__________________________________________________
+ID: IV2498
+Audio Path: ./audio/ethereal.ogg
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 128
+Batch Size: -
+Epochs: 700
+Num. Mels: 512
+Best Epoch: 700
+FAD: 3255.644176595102
+Loss: 40.886173248291016
+Reconstruction Loss: 39.04514694213867
+KL Loss: 1.8410260677337646
+Execution Time: 6333.3 seconds
+__________________________________________________
