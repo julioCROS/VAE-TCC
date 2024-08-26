@@ -23,11 +23,13 @@ def calculate_fad(input, output):
     return fad
 
 def get_batches(data, num_batches):
+    print("\n - Separando os dados em lotes...")
     new_dim1 = data.shape[0] // num_batches
     if data.shape[0] % num_batches == 0:
         data = data.reshape((num_batches, new_dim1, data.shape[1]))
     else:
         raise ValueError("A divisão não resulta em dimensões inteiras")
+    print(f" - Dados separados em {num_batches} lotes de tamanho {new_dim1}")
     return data
 
 
@@ -49,15 +51,14 @@ def remove_intermediate_outputs(id):
         if file.startswith('intermediate_output_' + id):
             os.remove('./results/' + file)
 
-def show_results(output, execution_time, fad):
+def show_results(metadata, execution_time):
     print("#" * 112)
     print("\nMelhor resultado: ")
-    print(f"\t- Epoca: {output[1] + 1}")
-    print(f"\t- FAD: {fad}")
-    print(f"\t- Loss: {output[2].numpy()}")
-    print(f"\t- Reconstrução Loss: {output[3].numpy()}")
-    print(f"\t- KL Loss: {output[4].numpy()}")
-    print(f"\t- Tempo de execução: {execution_time} segundos")
+    print(f"\t- Epoca: {metadata[1] + 1}")
+    print(f"\t- Loss: {metadata[2].numpy()}")
+    print(f"\t- Reconstrução Loss: {metadata[3].numpy()}")
+    print(f"\t- KL Loss: {metadata[4].numpy()}")
+    print(f"\t- Tempo de execução: {execution_time} segundos\n")
 
 def save_metadata(type, id, path, duration, rate, latent_dim, batch_size, epochs, output, execution_time, fad, mels = None):
     metadata_file = None
