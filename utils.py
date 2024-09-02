@@ -23,13 +23,12 @@ def calculate_fad(input, output):
     return fad
 
 def get_batches(data, num_batches):
-    print("\n - Separando os dados em lotes...")
-    new_dim1 = data.shape[0] // num_batches
-    if data.shape[0] % num_batches == 0:
-        data = data.reshape((num_batches, new_dim1, data.shape[1]))
+    dim_1 = data.shape[1] // (num_batches // data.shape[0])
+    if data.shape[1] % num_batches == 0:
+        data = data.reshape(num_batches, dim_1, data.shape[2], data.shape[3])
     else:
         raise ValueError("A divisão não resulta em dimensões inteiras")
-    print(f" - Dados separados em {num_batches} lotes de tamanho {new_dim1}")
+    print(f" - Dados separados em {num_batches} lotes de tamanho {dim_1}")
     return data
 
 
@@ -54,10 +53,10 @@ def remove_intermediate_outputs(id):
 def show_results(metadata, execution_time):
     print("#" * 112)
     print("\nMelhor resultado: ")
-    print(f"\t- Epoca: {metadata[1] + 1}")
-    print(f"\t- Loss: {metadata[2].numpy()}")
-    print(f"\t- Reconstrução Loss: {metadata[3].numpy()}")
-    print(f"\t- KL Loss: {metadata[4].numpy()}")
+    print(f"\t- Epoca: {metadata[0] + 1}")
+    print(f"\t- Loss: {metadata[1].numpy()}")
+    print(f"\t- Reconstrução Loss: {metadata[2].numpy()}")
+    print(f"\t- KL Loss: {metadata[3].numpy()}")
     print(f"\t- Tempo de execução: {execution_time} segundos\n")
 
 def save_metadata(type, id, path, duration, rate, latent_dim, batch_size, epochs, output, execution_time, fad, mels = None):
@@ -76,10 +75,11 @@ def save_metadata(type, id, path, duration, rate, latent_dim, batch_size, epochs
         file.write(f"Epochs: {epochs}\n")
         if mels is not None:
             file.write(f"Num. Mels: {mels}\n")
-        file.write(f"Best Epoch: {output[1]+1}\n")
+        file.write(f"Best Epoch: {output[0]+1}\n")
         file.write(f"FAD: {fad}\n")
-        file.write(f"Loss: {output[2].numpy()}\n")
-        file.write(f"Reconstruction Loss: {output[3].numpy()}\n")
-        file.write(f"KL Loss: {output[4].numpy()}\n")
+        file.write(f"Loss: {output[1].numpy()}\n")
+        file.write(f"Reconstruction Loss: {output[2].numpy()}\n")
+        file.write(f"KL Loss: {output[3].numpy()}\n")
         file.write(f"Execution Time: {execution_time} seconds\n")
         file.write("_" * 50 + "\n")
+        print(f"[Metadados salvos em {metadata_file}]")

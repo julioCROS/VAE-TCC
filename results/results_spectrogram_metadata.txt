@@ -238,3 +238,32 @@ Reconstruction Loss: 39.04514694213867
 KL Loss: 1.8410260677337646
 Execution Time: 6333.3 seconds
 __________________________________________________
+ID: VU2707
+Audio Path: ./audio/
+Audio Duration: 5
+Audio Rate: 11000
+Latent Dim: 128
+Batch Size: 1
+Epochs: 700
+Num. Mels: 512
+Best Epoch: 700
+Loss: 28.247663497924805
+Reconstrução Loss: 22.722362518310547
+KL Loss: 5.525301456451416
+Execution Time: 5107.46 seconds
+__________________________________________________
+ID: FV6973
+Audio Path: ./audio/
+Audio Duration: 10
+Audio Rate: 11000
+Latent Dim: 256
+Batch Size: 1
+Epochs: 600
+Num. Mels: 512
+Best Epoch: 600
+FAD: None
+Loss: 2330.13818359375
+Reconstruction Loss: 2321.098388671875
+KL Loss: 9.039810180664062
+Execution Time: 14576.44 seconds
+__________________________________________________
