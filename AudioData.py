@@ -19,17 +19,17 @@ class AudioData:
         mel_spectrogram = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=self.n_mels, n_fft=self.n_fft)
         return mel_spectrogram, sr
     
-    def get_mel_spectrograms(self, num_samples = 2):
+    def get_mel_spectrograms(self, num_audio_samples = 2):
         print("\n[ Extraindo Mel Spectrograms... ]")
         files = os.listdir(self.audio_path)
-        files = random.sample(files, 2)
+        files = random.sample(files, num_audio_samples)
         mel_spectrograms = []
         for file in files:
             ms, sr = self.read_audio(self.audio_path + file)
             mel_spectrograms.append(ms)
             print(f" - {file.split('.')[0]} OK")
-        print("\n")
         mel_spectrograms = np.array(mel_spectrograms)
+        print("")
         return mel_spectrograms
     
     def mel_spectrogram_to_audio(self, mel_spectrogram):

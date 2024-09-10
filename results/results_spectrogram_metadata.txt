@@ -267,3 +267,273 @@ Reconstruction Loss: 2321.098388671875
 KL Loss: 9.039810180664062
 Execution Time: 14576.44 seconds
 __________________________________________________
+ID: SV7083
+Audio Path: ./audio/
+Audio Duration: 2
+Audio Rate: 11000
+Latent Dim: 256
+Batch Size: 1
+Epochs: 2
+Num. Mels: 512
+Best Epoch: 2
+FAD: None
+Loss: 145.33888244628906
+Reconstruction Loss: 44.65182876586914
+KL Loss: 100.68705749511719
+Execution Time: 21.12 seconds
+__________________________________________________
+ID: WV8764
+Audio Path: ./audio/
+Audio Duration: 2
+Audio Rate: 11000
+Latent Dim: 128
+Batch Size: 1
+Epochs: 3
+Num. Mels: 512
+Best Epoch: 3
+FAD: None
+Loss: 1614.74169921875
+Reconstruction Loss: 1614.74169921875
+KL Loss: 27670.994140625
+Execution Time: 16.13 seconds
+__________________________________________________
+ID: XV5139
+Audio Path: ./audio/
+Audio Duration: 2
+Audio Rate: 11000
+Latent Dim: 128
+Batch Size: 1
+Epochs: 3
+Num. Mels: 512
+Best Epoch: 3
+KL Weight: 0.03
+FAD: None
+Loss: 1426.560546875
+Reconstruction Loss: 1426.560546875
+KL Loss: 3955.843017578125
+Execution Time: 11.19 seconds
+__________________________________________________
+ID: GF3955
+Audio Path: ./audio/
+Audio Duration: 10
+Audio Rate: 11000
+Latent Dim: 128
+Batch Size: 1
+Epochs: 500
+Num. Mels: 512
+Best Epoch: 500
+KL Weight: 1
+FAD: None
+Loss: 6766.052734375
+Reconstruction Loss: 6766.052734375
+KL Loss: 475.1977844238281
+Execution Time: 2410.14 seconds
+__________________________________________________
+ID: DD1410
+Audio Path: ./audio/
+Audio Duration: 10
+Audio Rate: 11000
+Latent Dim: 128
+Batch Size: 1
+Epochs: 500
+Num. Mels: 512
+Best Epoch: 500
+KL Weight: 1
+FAD: None
+Loss: 2851.489501953125
+Reconstruction Loss: 2851.489501953125
+KL Loss: 442.3978576660156
+Execution Time: 654.57 seconds
+__________________________________________________
+ID: IQ3989
+Audio Path: ./audio/
+Audio Duration: 10
+Audio Rate: 11000
+Latent Dim: 128
+Batch Size: 1
+Epochs: 500
+Num. Mels: 512
+Best Epoch: 500
+KL Weight: 1
+FAD: None
+Loss: 3.7479329109191895
+Reconstruction Loss: 3.7479329109191895
+KL Loss: 3042.9677734375
+Execution Time: 449.77 seconds
+__________________________________________________
+ID: AC3228
+Audio Path: ./audio/
+Audio Duration: 10
+Audio Rate: 11000
+Latent Dim: 2
+Batch Size: 1
+Epochs: 500
+Num. Mels: 512
+Best Epoch: 500
+KL Weight: 1
+FAD: None
+Loss: 3.9177896976470947
+Reconstruction Loss: 3.9177896976470947
+KL Loss: 202.3607177734375
+Execution Time: 311.09 seconds
+__________________________________________________
+ID: AC3255
+Audio Path: ./audio/
+Audio Duration: 10
+Audio Rate: 11000
+Latent Dim: 2
+Batch Size: 1
+Epochs: 500
+Num. Mels: 512
+Best Epoch: 474
+KL Weight: 0.9480000000000007
+FAD: None
+Loss: 5312.4697265625
+Reconstruction Loss: 5312.4697265625
+KL Loss: 36.802677154541016
+Execution Time: 2229.75 seconds
+__________________________________________________
+ID: BV7010
+Audio Path: ./audio/
+Audio Duration: 15
+Audio Rate: 11000
+Latent Dim: 64
+Batch Size: 1
+Epochs: 500
+Num. Mels: 512
+Best Epoch: 500
+KL Weight: 1
+FAD: None
+Loss: 7039.54833984375
+Reconstruction Loss: 7039.54833984375
+KL Loss: 361.043701171875
+Execution Time: 3951.02 seconds
+__________________________________________________
+ID: MF8158
+Audio Path: ./audio/pop/
+Audio Duration: 10
+Audio Rate: 11000
+Latent Dim: 64
+Batch Size: 1
+Epochs: 100
+Num. Mels: 512
+Best Epoch: 100
+KL Weight: 1
+FAD: None
+Loss: 9097.4658203125
+Reconstruction Loss: 9097.4658203125
+KL Loss: 490.2137756347656
+Execution Time: 1182.42 seconds
+__________________________________________________
+ID: VS3795
+Audio Path: ./audio/pop/
+Audio Duration: 10
+Audio Rate: 11000
+Latent Dim: 64
+Batch Size: 1
+Epochs: 100
+Num. Mels: 512
+Best Epoch: 100
+KL Weight: 1
+FAD: None
+Loss: 6952.92333984375
+Reconstruction Loss: 6952.92333984375
+KL Loss: 582.5245971679688
+Execution Time: 1810.9 seconds
+__________________________________________________
+ID: EW9974
+Audio Path: ./audio/test/
+Audio Duration: 7
+Audio Rate: 11000
+Latent Dim: 64
+Batch Size: 1
+Epochs: 100
+Num. Mels: 512
+Best Epoch: 100
+KL Weight: 1
+FAD: None
+Loss: 163.4940948486328
+Reconstruction Loss: 163.4940948486328
+KL Loss: 1644.1861572265625
+Execution Time: 177.38 seconds
+__________________________________________________
+ID: AA9051
+Audio Path: ./audio/test/
+Audio Duration: 7
+Audio Rate: 11000
+Latent Dim: 64
+Batch Size: 1
+Epochs: 100
+Num. Mels: 512
+Best Epoch: 100
+KL Weight: 1
+FAD: None
+Loss: 4627.19287109375
+Reconstruction Loss: 4605.59375
+KL Loss: 21.599153518676758
+Execution Time: 118.38 seconds
+__________________________________________________
+ID: RO2526
+Audio Path: ./audio/test/
+Audio Duration: 7
+Audio Rate: 11000
+Latent Dim: 64
+Batch Size: 1
+Epochs: 100
+Num. Mels: 512
+Best Epoch: 100
+KL Weight: 1
+FAD: None
+Loss: 5759.6416015625
+Reconstruction Loss: 5759.6416015625
+KL Loss: 2900.0205078125
+Execution Time: 135.73 seconds
+__________________________________________________
+ID: FV6764
+Audio Path: ./audio/test/
+Audio Duration: 7
+Audio Rate: 11000
+Latent Dim: 3
+Batch Size: 1
+Epochs: 100
+Num. Mels: 512
+Best Epoch: 100
+KL Weight: 1
+FAD: None
+Loss: 5263.6015625
+Reconstruction Loss: 5263.6015625
+KL Loss: 1390.662109375
+Execution Time: 290.93 seconds
+__________________________________________________
+ID: IT3454
+Audio Path: ./audio/test/
+Audio Duration: 7
+Audio Rate: 11000
+Latent Dim: 2
+Batch Size: 1
+Epochs: 200
+Num. Mels: 512
+Best Epoch: 200
+KL Weight: 0.5
+FAD: None
+Loss: 5598.36181640625
+Reconstruction Loss: 5598.36083984375
+KL Loss: 0.16470351815223694
+Execution Time: 684.29 seconds
+__________________________________________________
+ID: OW8944
+Audio Path: ./audio/test/
+Audio Duration: 7
+Audio Rate: 11000
+Latent Dim: 2
+Batch Size: 1
+Epochs: 200
+Num. Mels: 512
+Best Epoch: 200
+KL Weight: 0.5
+FAD: None
+Loss: 5554.1826171875
+Reconstruction Loss: 5554.18212890625
+KL Loss: 0.21486203372478485
+Execution Time: 593.45 seconds
+__________________________________________________

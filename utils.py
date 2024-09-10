@@ -1,6 +1,8 @@
-import librosa
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow as tf
+from sklearn.decomposition import PCA
 from scipy.linalg import sqrtm
 
 def calculate_fad(input, output):
@@ -50,7 +52,7 @@ def remove_intermediate_outputs(id):
         if file.startswith('intermediate_output_' + id):
             os.remove('./results/' + file)
 
-def show_results(metadata, execution_time):
+def show_results(metadata, execution_time, reconstruction_losses, kl_losses, epochs, id, mu):
     print("#" * 112)
     print("\nMelhor resultado: ")
     print(f"\t- Epoca: {metadata[0] + 1}")
@@ -59,6 +61,23 @@ def show_results(metadata, execution_time):
     print(f"\t- KL Loss: {metadata[3].numpy()}")
     print(f"\t- Tempo de execução: {execution_time} segundos\n")
 
+    plt.plot(range(1, epochs+1), reconstruction_losses, label='Reconstrução')
+    plt.plot(range(1, epochs+1), kl_losses, label='Perda KL')
+    plt.xlabel('Época')
+    plt.ylabel('Perda')
+    plt.legend()
+    plt.savefig('./graphs/graph_' + id + '.png')
+    plt.close() 
+
+    pca = PCA(n_components=2)
+    mu_pca = pca.fit_transform(mu)
+    plt.scatter(mu_pca[:, 0], mu_pca[:, 1])
+    plt.xlabel('PCA 1')
+    plt.ylabel('PCA 2')
+    plt.title('Visualização do Espaço Latente com PCA')
+    plt.savefig('./graphs/pca_' + id + '.png')
+    plt.close() 
+
 def save_metadata(type, id, path, duration, rate, latent_dim, batch_size, epochs, output, execution_time, fad, mels = None):
     metadata_file = None
     if type is None:
@@ -66,6 +85,7 @@ def save_metadata(type, id, path, duration, rate, latent_dim, batch_size, epochs
     elif type == 'stg':
         metadata_file = './results/results_spectrogram_metadata.txt'
     with open(metadata_file, 'a') as file:
+        print(f"[Salvando metadados de {id}]")
         file.write(f"ID: {id}\n")
         file.write(f"Audio Path: {path}\n")
         file.write(f"Audio Duration: {duration}\n")
@@ -76,10 +96,11 @@ def save_metadata(type, id, path, duration, rate, latent_dim, batch_size, epochs
         if mels is not None:
             file.write(f"Num. Mels: {mels}\n")
         file.write(f"Best Epoch: {output[0]+1}\n")
+        file.write(f"KL Weight: {output[4]}\n")
         file.write(f"FAD: {fad}\n")
         file.write(f"Loss: {output[1].numpy()}\n")
         file.write(f"Reconstruction Loss: {output[2].numpy()}\n")
         file.write(f"KL Loss: {output[3].numpy()}\n")
         file.write(f"Execution Time: {execution_time} seconds\n")
         file.write("_" * 50 + "\n")
-        print(f"[Metadados salvos em {metadata_file}]")
+        print(f"[Metadados salvos em {metadata_file}]\n")
