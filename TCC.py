@@ -1,5 +1,6 @@
 import time
 import tensorflow as tf
+import soundfile as sf
 
 from VAE import VAE
 from utils import *
@@ -46,5 +47,6 @@ generated = model.sample(config.num_samples_generate)
 # Para cada espectrograma gerado, salva o resultado em formato de áudio e em um arquivo txt
 for i in range(config.num_samples_generate):
     print(f"[ Salvando resultado gerado {i + 1} ]")
+    file_result = './results/generated_audio_' + current_id + '_' + str(i+1) + '.ogg'
     generated_audio = audio_data.mel_spectrogram_to_audio(generated[i].numpy().reshape(generated[i].shape[0], generated[i].shape[1]))
-    save_result('generated_audio', generated_audio, current_id + '_' + str(i), config.audio_duration * config.audio_rate)
+    sf.write(file_result, generated_audio, config.audio_rate)

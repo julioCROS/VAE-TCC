@@ -22,7 +22,7 @@ class VAE(tf.keras.Model):
         self.encoder = tf.keras.Sequential()
         self.encoder.add(layers.InputLayer(input_shape=(self.input_shape[1], self.input_shape[2], self.input_shape[3])))
         for h_dim in self.hidden_dims:
-            self.encoder.add(layers.Conv2D(h_dim, kernel_size=(3,3), strides=(2,2), padding='same'))
+            self.encoder.add(layers.Conv2D(h_dim, kernel_size=4, strides=2, padding='same'))
             self.encoder.add(layers.LayerNormalization())
             self.encoder.add(layers.LeakyReLU())
 
@@ -43,11 +43,11 @@ class VAE(tf.keras.Model):
         self.decoder.add(layers.Reshape((self.input_shape[1] // factor, self.input_shape[2] // factor, self.hidden_dims[-1])))
 
         for h_dim in self.hidden_dims[::-1]:
-            self.decoder.add(layers.Conv2DTranspose(h_dim, kernel_size=(3,3), strides=(2,2), padding='same'))
+            self.decoder.add(layers.Conv2DTranspose(h_dim, kernel_size=4, strides=2, padding='same'))
             self.decoder.add(layers.LayerNormalization())
             self.decoder.add(layers.LeakyReLU())
 
-        self.decoder.add(layers.Conv2DTranspose(1, kernel_size=(3,3), strides=(1,1), padding='same', activation='relu'))
+        self.decoder.add(layers.Conv2DTranspose(1, kernel_size=4, strides=2, padding='same', activation='relu'))
 
         if self.decoder.output_shape[1] < self.input_shape[1]:
             padding_needed = self.input_shape[1] - self.decoder.output_shape[1]
@@ -113,17 +113,18 @@ class VAE(tf.keras.Model):
         with tf.GradientTape() as tape:
             outputs, inputs, mu, log_var = self(data)
             loss, reconstruction_loss, kl_loss = self.loss_function(inputs, outputs, mu, log_var)
+
         gradients = tape.gradient(loss, self.trainable_variables)
         optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-        return loss, reconstruction_loss, kl_loss        
-    
+        return loss, reconstruction_loss, kl_loss
+
     def loss_function(self, inputs, outputs, mu, log_var):
         assert inputs.shape == outputs.shape, f"Shape mismatch: {inputs.shape} vs {outputs.shape}"
         reconstruction_loss = tf.reduce_mean(tf.keras.losses.MeanSquaredError()(inputs, outputs))
         kl_loss = -0.5 * tf.reduce_mean(tf.reduce_sum(1 + log_var - tf.square(mu) - tf.exp(log_var), axis=1))
 
         latent_penalty = tf.reduce_mean(tf.abs(mu))
-        total_loss = reconstruction_loss + (self.kl_weight * kl_loss) + 0.1 * latent_penalty
+        total_loss = reconstruction_loss + (self.kl_weight * kl_loss) + 0.01 * latent_penalty
         # total_loss = reconstruction_loss + (self.kl_weight * kl_loss)
         return total_loss, reconstruction_loss, kl_loss
     

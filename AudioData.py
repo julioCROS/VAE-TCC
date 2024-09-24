@@ -33,7 +33,8 @@ class AudioData:
         return mel_spectrograms
     
     def mel_spectrogram_to_audio(self, mel_spectrogram):
-        audio_data = librosa.feature.inverse.mel_to_audio(mel_spectrogram, sr=self.sr, n_fft=self.n_fft, hop_length=self.hop_length)
+        audio_data = librosa.feature.inverse.mel_to_audio(mel_spectrogram, sr=self.sr, n_fft=self.n_fft, hop_length=self.hop_length, n_iter=128)
+        print("Shape: ", audio_data.shape)
         return audio_data
 
 
