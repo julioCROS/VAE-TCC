@@ -93,7 +93,7 @@ def save_metadata(id, execution_time):
 
 def save_graphs(id, train_recon_losses, train_kl_losses, mu, spectral_losses = None, representation_train_kl_losses = None,):
     #representation_train_kl_losses = representation_train_kl_losses[10:]
-    #train_kl_losses = train_kl_losses[10:]
+    train_kl_losses = train_kl_losses[10:]
 
     graph_file = './graphs/' + id + '.png'
     

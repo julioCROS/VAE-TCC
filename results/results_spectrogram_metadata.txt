@@ -854,3 +854,21 @@ Kernel Sizes: [(4, 4), (4, 4), (4, 4)]
 Strides: [(2, 2), (2, 2), (2, 2)]
 Execution Time: 16.75 seconds
 __________________________________________________
+ID: BC8233
+Epochs: 100
+Num. audio samples: 2
+Num. Mels: 512
+Latent Dim: 16
+Compact Latent Space: False
+Audio Duration: 16
+Audio Rate: 11000
+Hidden Dims: [8, 16, 32, 64, 128]
+KL Annealing Rate: 0.01
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.001
+Num. Segments: 32
+Shuffle Segments: True
+Kernel Sizes: [(4, 4), (4, 4), (4, 4)]
+Strides: [(2, 2), (2, 2), (2, 2)]
+Execution Time: 51.28 seconds
+__________________________________________________
