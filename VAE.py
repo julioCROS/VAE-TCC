@@ -140,7 +140,6 @@ class VAE(tf.keras.Model):
         reconstruction_losses = []
         kl_losses = []
         for epoch in range(epochs):
-            print(f"\n[Epoca {epoch+1}]")
             loss, reconstruction_loss, kl_loss = self.train_step(data, optimizer) 
             if self.kl_weight < self.max_kl_weight:
                 self.kl_weight += self.kl_annealing_rate
@@ -148,7 +147,7 @@ class VAE(tf.keras.Model):
 
             reconstruction_losses.append(reconstruction_loss.numpy())
             kl_losses.append(kl_loss.numpy())
-            print(f"[ Epoca {epoch+1} | Loss: {loss.numpy()} |  Recon. Loss: {reconstruction_losses.numpy()} | KL Loss: {kl_losses.numpy()}]")
+            print(f"[ Epoca {epoch+1} | Loss: {loss.numpy()} |  Recon. Loss: {reconstruction_loss.numpy()} | KL Loss: {kl_loss.numpy()}]")
         return reconstruction_losses, kl_losses
     
     @tf.function

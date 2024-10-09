@@ -836,3 +836,21 @@ Batch Size: 8
 Shuffle Batches: True
 Execution Time: 15511.69 seconds
 __________________________________________________
+ID: GG7462
+Epochs: 1
+Num. audio samples: 2
+Num. Mels: 512
+Latent Dim: 16
+Compact Latent Space: False
+Audio Duration: 15
+Audio Rate: 11000
+Hidden Dims: [8, 16, 32, 64, 128]
+KL Annealing Rate: 1.0
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.001
+Num. Segments: 2
+Shuffle Segments: True
+Kernel Sizes: [(4, 4), (4, 4), (4, 4)]
+Strides: [(2, 2), (2, 2), (2, 2)]
+Execution Time: 16.75 seconds
+__________________________________________________
