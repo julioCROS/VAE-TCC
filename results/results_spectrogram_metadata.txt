@@ -537,3 +537,302 @@ Reconstruction Loss: 5554.18212890625
 KL Loss: 0.21486203372478485
 Execution Time: 593.45 seconds
 __________________________________________________
+ID: PW7295
+Epochs: 1
+Num. audio samples: 2
+Num. Mels: 128
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 2
+Audio Rate: 11000
+Hidden Dims: [64, 128, 256, 512, 1024]
+KL Annealing Rate: 1.0
+Max KL Weight: 2
+Optimizer Learning Rate: 0.005
+Batch Size: 1
+Execution Time: 11.33 seconds
+__________________________________________________
+ID: BB2170
+Epochs: 10
+Num. audio samples: 2
+Num. Mels: 128
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 2
+Audio Rate: 11000
+Hidden Dims: [64, 128, 256, 512, 1024]
+KL Annealing Rate: 0.1
+Max KL Weight: 2
+Optimizer Learning Rate: 0.005
+Batch Size: 1
+Execution Time: 31.8 seconds
+__________________________________________________
+ID: CB5592
+Epochs: 300
+Num. audio samples: 2
+Num. Mels: 512
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 16
+Audio Rate: 11000
+Hidden Dims: [64, 128, 256, 512, 1024]
+KL Annealing Rate: 0.0033333333333333335
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.005
+Batch Size: 1
+Execution Time: 4425.28 seconds
+__________________________________________________
+ID: BO2922
+Epochs: 300
+Num. audio samples: 2
+Num. Mels: 512
+Latent Dim: 4
+Compact Latent Space: False
+Audio Duration: 16
+Audio Rate: 11000
+Hidden Dims: [32, 64, 128, 256, 512, 1024]
+KL Annealing Rate: 0.0033333333333333335
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.005
+Batch Size: 1
+Execution Time: 1687.46 seconds
+__________________________________________________
+ID: FR6410
+Epochs: 700
+Num. audio samples: 2
+Num. Mels: 512
+Latent Dim: 4
+Compact Latent Space: False
+Audio Duration: 16
+Audio Rate: 11000
+Hidden Dims: [32, 64, 128, 256, 512, 1024]
+KL Annealing Rate: 0.0014285714285714286
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.001
+Batch Size: 1
+Execution Time: 11539.09 seconds
+__________________________________________________
+ID: SH4709
+Epochs: 1
+Num. audio samples: 2
+Num. Mels: 512
+Latent Dim: 512
+Compact Latent Space: False
+Audio Duration: 3
+Audio Rate: 11000
+Hidden Dims: [256, 512, 1024]
+KL Annealing Rate: 1.0
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.001
+Batch Size: 16
+Shuffle Batches: True
+Execution Time: 138.45 seconds
+__________________________________________________
+ID: TM8647
+Epochs: 100
+Num. audio samples: 2
+Num. Mels: 512
+Latent Dim: 512
+Compact Latent Space: False
+Audio Duration: 5
+Audio Rate: 11000
+Hidden Dims: [32, 64, 128, 256, 512]
+KL Annealing Rate: 0.01
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.001
+Batch Size: 8
+Shuffle Batches: True
+Execution Time: 1327.54 seconds
+__________________________________________________
+ID: EX8041
+Epochs: 500
+Num. audio samples: 2
+Num. Mels: 512
+Latent Dim: 512
+Compact Latent Space: False
+Audio Duration: 16
+Audio Rate: 11000
+Hidden Dims: [32, 64, 128, 256, 512]
+KL Annealing Rate: 0.002
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.001
+Batch Size: 8
+Shuffle Batches: True
+Execution Time: 16598.91 seconds
+__________________________________________________
+ID: IM2449
+Epochs: 1
+Num. audio samples: 2
+Num. Mels: 128
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 3
+Audio Rate: 3000
+Hidden Dims: [32, 64, 128, 256]
+KL Annealing Rate: 1.0
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.005
+Batch Size: 2
+Shuffle Batches: True
+Execution Time: 9.14 seconds
+__________________________________________________
+ID: UO9114
+Epochs: 1
+Num. audio samples: 2
+Num. Mels: 128
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 3
+Audio Rate: 3000
+Hidden Dims: [32, 64, 128, 256]
+KL Annealing Rate: 1.0
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.005
+Batch Size: 2
+Shuffle Batches: True
+Execution Time: 9.39 seconds
+__________________________________________________
+ID: UZ3935
+Epochs: 1
+Num. audio samples: 2
+Num. Mels: 128
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 3
+Audio Rate: 3000
+Hidden Dims: [32, 64, 128, 256]
+KL Annealing Rate: 1.0
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.005
+Batch Size: 2
+Shuffle Batches: True
+Execution Time: 8.77 seconds
+__________________________________________________
+ID: SG5258
+Epochs: 1
+Num. audio samples: 2
+Num. Mels: 128
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 3
+Audio Rate: 3000
+Hidden Dims: [32, 64, 128, 256]
+KL Annealing Rate: 1.0
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.005
+Batch Size: 2
+Shuffle Batches: True
+Execution Time: 8.65 seconds
+__________________________________________________
+ID: WQ8646
+Epochs: 1
+Num. audio samples: 2
+Num. Mels: 128
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 3
+Audio Rate: 3000
+Hidden Dims: [32, 64, 128, 256]
+KL Annealing Rate: 1.0
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.005
+Batch Size: 2
+Shuffle Batches: True
+Execution Time: 9.51 seconds
+__________________________________________________
+ID: FX1553
+Epochs: 1
+Num. audio samples: 2
+Num. Mels: 128
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 3
+Audio Rate: 3000
+Hidden Dims: [32, 64, 128, 256]
+KL Annealing Rate: 1.0
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.005
+Batch Size: 2
+Shuffle Batches: True
+Execution Time: 9.25 seconds
+__________________________________________________
+ID: DT1429
+Epochs: 1
+Num. audio samples: 2
+Num. Mels: 128
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 3
+Audio Rate: 3000
+Hidden Dims: [32, 64, 128, 256]
+KL Annealing Rate: 1.0
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.005
+Batch Size: 2
+Shuffle Batches: True
+Execution Time: 8.81 seconds
+__________________________________________________
+ID: MC6740
+Epochs: 1
+Num. audio samples: 2
+Num. Mels: 128
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 3
+Audio Rate: 3000
+Hidden Dims: [32, 64, 128, 256]
+KL Annealing Rate: 1.0
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.005
+Batch Size: 2
+Shuffle Batches: True
+Execution Time: 11.4 seconds
+__________________________________________________
+ID: TE5235
+Epochs: 1
+Num. audio samples: 2
+Num. Mels: 128
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 3
+Audio Rate: 3000
+Hidden Dims: [32, 64, 128, 256]
+KL Annealing Rate: 1.0
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.005
+Batch Size: 2
+Shuffle Batches: True
+Execution Time: 9.51 seconds
+__________________________________________________
+ID: CS8875
+Epochs: 100
+Num. audio samples: 2
+Num. Mels: 512
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 16
+Audio Rate: 11000
+Hidden Dims: [32, 64, 128, 256, 512]
+KL Annealing Rate: 0.01
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.005
+Batch Size: 8
+Shuffle Batches: True
+Execution Time: 3226.26 seconds
+__________________________________________________
+ID: IC5652
+Epochs: 100
+Num. audio samples: 2
+Num. Mels: 512
+Latent Dim: 4
+Compact Latent Space: False
+Audio Duration: 16
+Audio Rate: 11000
+Hidden Dims: [64, 128, 256, 512, 1024]
+KL Annealing Rate: 0.01
+Max KL Weight: 0.5
+Optimizer Learning Rate: 0.005
+Batch Size: 8
+Shuffle Batches: True
+Execution Time: 15511.69 seconds
+__________________________________________________

@@ -27,7 +27,7 @@ class AudioData:
         for file in files:
             ms, sr = self.read_audio(self.audio_path + file)
             mel_spectrograms.append(ms)
-            print(f" - {file.split('.')[0]} OK")
+            print(f" - {file.split('.')[0]}: OK")
         mel_spectrograms = np.array(mel_spectrograms)
         print("")
         return mel_spectrograms

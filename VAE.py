@@ -5,7 +5,9 @@ import numpy as np
 import auraloss
 
 class VAE(tf.keras.Model):
-    def __init__(self, input_shape, latent_dim, hidden_dims=None, id=None, duration=None, rate=None, kl_annealing_rate=0.01, max_kl_weight=1.0):
+    def __init__(self, input_shape, latent_dim, hidden_dims, id, 
+                 duration, rate, kernel_sizes, strides,
+                kl_annealing_rate=0.01, max_kl_weight=1.0,):
         super(VAE, self).__init__()
         self.latent_dim = latent_dim
         self.input_shape = input_shape
@@ -13,6 +15,8 @@ class VAE(tf.keras.Model):
         self.duration = duration
         self.rate = rate
         self.hidden_dims = hidden_dims
+        self.kernel_sizes = kernel_sizes
+        self.strides = strides
 
         self.kl_weight = 0
         self.kl_annealing_rate = kl_annealing_rate
@@ -25,7 +29,7 @@ class VAE(tf.keras.Model):
         self.encoder = tf.keras.Sequential()
         self.encoder.add(layers.InputLayer(input_shape=(self.input_shape[1], self.input_shape[2], self.input_shape[3])))
         for h_dim in self.hidden_dims:
-            self.encoder.add(layers.Conv2D(h_dim, kernel_size=4, strides=2, padding='same'))
+            self.encoder.add(layers.Conv2D(h_dim, kernel_size=self.kernel_sizes[0], strides=self.strides[0], padding='same'))
             self.encoder.add(layers.LayerNormalization())
             self.encoder.add(layers.LeakyReLU())
 
@@ -46,11 +50,11 @@ class VAE(tf.keras.Model):
         self.decoder.add(layers.Reshape((self.input_shape[1] // factor, self.input_shape[2] // factor, self.hidden_dims[-1])))
 
         for h_dim in self.hidden_dims[::-1]:
-            self.decoder.add(layers.Conv2DTranspose(h_dim, kernel_size=4, strides=2, padding='same'))
+            self.decoder.add(layers.Conv2DTranspose(h_dim, kernel_size=self.kernel_sizes[1], strides=self.strides[1], padding='same'))
             self.decoder.add(layers.LayerNormalization())
             self.decoder.add(layers.LeakyReLU())
 
-        self.decoder.add(layers.Conv2DTranspose(1, kernel_size=4, strides=2, padding='same', activation='relu'))
+        self.decoder.add(layers.Conv2DTranspose(1, kernel_size=self.kernel_sizes[2], strides=self.strides[2], padding='same', activation='relu'))
 
         if self.decoder.output_shape[1] < self.input_shape[1]:
             padding_needed = self.input_shape[1] - self.decoder.output_shape[1]
@@ -85,19 +89,20 @@ class VAE(tf.keras.Model):
         z = eps * tf.exp(logvar * 0.5) + mu
         quantized_z = tf.round(z)  
         return quantized_z   
-
-    def decode(self, z):
-        x = self.decoder(z)
-        return x
     
     def representation_learning_train(self, data, epochs, optimizer):
-        print("\n[ [Iniciando aprendizado  de representação...")
+        print("\n[Iniciando aprendizado de representação...]")
+        spectral_losses = []
+        repr_kl_losses = []
         for epoch in range(epochs):
             with tf.GradientTape() as tape:
                 outputs, inputs, mu, log_var = self(data)
                 spectral_loss = self.compute_spectral_loss(inputs, outputs)
                 kl_loss = -0.5 * tf.reduce_mean(tf.reduce_sum(1 + log_var - tf.square(mu) - tf.exp(log_var), axis=1))
                 loss = spectral_loss + self.kl_weight * kl_loss
+                
+                print(f"Segmento {segment_count} de {len(data)}.")
+                segment_count += 1
 
             gradients = tape.gradient(loss, self.trainable_variables)
             optimizer.apply_gradients(zip(gradients, self.trainable_variables))
@@ -106,7 +111,10 @@ class VAE(tf.keras.Model):
                 self.kl_weight += self.kl_annealing_rate
                 self.kl_weight = min(self.kl_weight, self.max_kl_weight)
 
-            print(f"Epoch {epoch+1} | Spectral Loss: {spectral_loss.numpy()} | KL Loss: {kl_loss.numpy()} | Total Loss: {loss.numpy()}")
+            spectral_losses.append(spectral_loss.numpy())
+            repr_kl_losses.append(kl_loss.numpy())
+            print(f"[Epoca {epoch+1} | Spectral Loss: {spectral_loss.numpy()} | KL Loss: {kl_loss.numpy()} | Total Loss: {loss.numpy()}]")
+        return spectral_losses, repr_kl_losses
 
     def compute_spectral_loss(self, real, fake):
         # Converte os tensores de TensorFlow para NumPy
@@ -117,39 +125,31 @@ class VAE(tf.keras.Model):
         real_torch = torch.from_numpy(real_np).float()
         fake_torch = torch.from_numpy(fake_np).float()
 
-        # Realoca o tensor para o formato (batch_size, channels, sequence_length)
-        real_torch = real_torch.permute(0, 3, 1, 2).reshape(real_torch.shape[0], real_torch.shape[3], -1)
-        fake_torch = fake_torch.permute(0, 3, 1, 2).reshape(fake_torch.shape[0], fake_torch.shape[3], -1)
+        real_torch = real_torch.permute(0, 2, 1)
+        fake_torch = fake_torch.permute(0, 2, 1)
 
         # Calcula a perda STFT usando auraloss
-        loss_fn = auraloss.freq.MultiResolutionSTFTLoss()
+        loss_fn = auraloss.time.SNRLoss()
         spectral_loss = loss_fn(real_torch, fake_torch)
 
         # Converte o resultado da perda de volta para TensorFlow
         return tf.convert_to_tensor(spectral_loss.item())
 
-
     def train(self, data, epochs, optimizer):
-        print("Iniciando treinamento...")
-        best_epoch_metadata = None
-        min_reconstruction_loss = float('inf')
+        print("\n[Iniciando treinamento...]")
         reconstruction_losses = []
         kl_losses = []
         for epoch in range(epochs):
+            print(f"\n[Epoca {epoch+1}]")
             loss, reconstruction_loss, kl_loss = self.train_step(data, optimizer) 
-
             if self.kl_weight < self.max_kl_weight:
                 self.kl_weight += self.kl_annealing_rate
                 self.kl_weight = min(self.kl_weight, self.max_kl_weight)
 
-            if reconstruction_loss < min_reconstruction_loss:
-                min_reconstruction_loss = reconstruction_loss
-                best_epoch_metadata = epoch, loss, reconstruction_loss, kl_loss, self.kl_weight
-
             reconstruction_losses.append(reconstruction_loss.numpy())
             kl_losses.append(kl_loss.numpy())
-            print(f"Epoca {epoch+1} | Loss: {loss.numpy()} |  Recon. Loss: {reconstruction_loss.numpy()} | KL Loss: {kl_loss.numpy()}")
-        return best_epoch_metadata, reconstruction_losses, kl_losses
+            print(f"[ Epoca {epoch+1} | Loss: {loss.numpy()} |  Recon. Loss: {reconstruction_losses.numpy()} | KL Loss: {kl_losses.numpy()}]")
+        return reconstruction_losses, kl_losses
     
     @tf.function
     def train_step(self, data, optimizer):
@@ -192,32 +192,51 @@ class VAE(tf.keras.Model):
 
             print(f"Epoch {epoch + 1} | Generator Loss: {gen_loss.numpy()} | Discriminator Loss: {disc_loss.numpy()}")
     
-    def latent_space_compactness(self, data):
-        print("Calculando a compacidade do espaço latente...")
-        latent_samples = []
+    def compact_latent_representation(self, data, fidelity_threshold=0.95):
+        print("\n[Compactando a representação latente...]")
+        mu, _ = self.encode(data)
+        mu = mu.numpy() 
 
-        for batch in data:
-            print(f"Batch shape: {batch.shape}")
-            _, _, mu, _ = self(batch)
-            latent_samples.append(mu.numpy())
+        mu_centered = mu - np.mean(mu, axis=0)
 
-        print("Calculando compacidade...")
-        latent_samples = np.concatenate(latent_samples, axis=0)
-        latent_samples_centered = latent_samples - np.mean(latent_samples, axis=0)
-        U, S, Vt = np.linalg.svd(latent_samples_centered, full_matrices=False)
+        U, S, Vt = np.linalg.svd(mu_centered, full_matrices=False)
+        variance_explained = np.cumsum(S**2) / np.sum(S**2)
+        num_informative_dims = np.searchsorted(variance_explained, fidelity_threshold) + 1
+
+        print(f"\t[Dimensões informativas selecionadas: {num_informative_dims} de {self.latent_dim}]\n")
         
-        fidelity_parameter = 0.95
-        total_variance = np.sum(S)
-        cumulative_variance = np.cumsum(S) / total_variance
-        compact_dimensionality = np.searchsorted(cumulative_variance, fidelity_parameter) + 1
+        reduced_latent = np.dot(mu_centered, Vt.T[:, :num_informative_dims])
+        return reduced_latent, Vt[:num_informative_dims]
 
-        print(f"Informative Latent Dimensions: {compact_dimensionality} out of {self.latent_dim}")
-
-        return Vt[:compact_dimensionality]
+    def encode_compact(self, data, informative_dimensions):
+        mu, _ = self.encode(data)
+        mu_centered = mu - np.mean(mu, axis=0)
+        
+        compact_latent = np.dot(mu_centered, informative_dimensions.T)
+        return compact_latent
     
-    def sample(self, num_samples):
-        z = tf.random.normal(shape=(num_samples, self.latent_dim))
-        return self.decode(z)
+    def sample(self, num_samples, data, informative_dimensions, compact_latent_space):
+        if compact_latent_space is False:
+            z = tf.random.normal(shape=(num_samples, self.latent_dim))
+            return self.decode(z)
+        else:
+            compact_latent = self.encode_compact(data, informative_dimensions)
+            
+            num_informative_dims = informative_dimensions.shape[1]  
+            print(f"compact_latent shape: {compact_latent.shape}")
+            print(f"num_informative_dims: {num_informative_dims}")
+            
+            random_indices = tf.random.uniform(shape=(num_samples,), minval=0, maxval=len(compact_latent), dtype=tf.int32)
+            sampled_latent = tf.gather(compact_latent, random_indices)
+            
+            sampled_latent = tf.reshape(sampled_latent, (num_samples, num_informative_dims))
+            
+            generated_samples = self.decode(sampled_latent)
+            return generated_samples
+    
+    def decode(self, z):
+        x = self.decoder(z)
+        return x
 
     def generate(self, x):
         return self.call(x)[0]
