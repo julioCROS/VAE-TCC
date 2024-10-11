@@ -115,9 +115,6 @@ class VAE(tf.keras.Model):
             signal_loss = self.compute_signal_loss(inputs, outputs)
             kl_loss = -0.5 * tf.reduce_mean(tf.reduce_sum(1 + log_var - tf.square(mu) - tf.exp(log_var), axis=1))
             loss = signal_loss + self.kl_weight * kl_loss
-            
-            print(f"Segmento {segment_count} de {len(data)}.")
-            segment_count += 1
 
         gradients = tape.gradient(loss, self.trainable_variables)
         optimizer.apply_gradients(zip(gradients, self.trainable_variables))
@@ -134,12 +131,13 @@ class VAE(tf.keras.Model):
         fake_torch = fake_torch.permute(0, 3, 1, 2).reshape(fake_torch.shape[0], fake_torch.shape[3], -1)
 
         loss_fn = auraloss.time.SNRLoss()
+        loss3 = auraloss.freq.MultiResolutionSTFTLoss()
         signal_loss = loss_fn(real_torch, fake_torch)
 
         return tf.convert_to_tensor(signal_loss.item())
     
     def adversarial_fine_tuning_train(self, data, epochs, generator_optimizer, discriminator_optimizer, discriminator):
-        print("[Iniciando ajuste fino adversarial...]")
+        print("\n[Iniciando ajuste fino adversarial...]")
         discriminator = Discriminator()
 
         for epoch in range(epochs):
