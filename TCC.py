@@ -29,10 +29,7 @@ model = VAE(input_shape=data.shape, latent_dim=config.latent_dim, hidden_dims=co
 
 
 # Treinando a representação do modelo
-#spectral_losses, representation_train_kl_losses = model.representation_learning_train(data, config.epochs, optimizer)
-
-# Treinando o modelo
-train_recon_losses, train_kl_losses = model.train(data, config.epochs, optimizer)
+spectral_losses, representation_train_kl_losses = model.representation_learning_train(data, config.epochs, optimizer)
 
 # Treinando o modelo com adversarial fine-tuning
 #discriminator = Discriminator()
@@ -40,7 +37,7 @@ train_recon_losses, train_kl_losses = model.train(data, config.epochs, optimizer
 #model.adversarial_fine_tuning_train(data, config.epochs, optimizer, discriminator_optimizer, discriminator)
 
 # Avaliando espaço latente
-reduced_latent, informative_dimensions = model.compact_latent_representation(data)
+#reduced_latent, informative_dimensions = model.compact_latent_representation(data)
 
 # Calculando o tempo de execução
 end_time = time.time()
@@ -54,14 +51,13 @@ mu = mu.numpy()
 # Exibindo e salvando resultados
 show_results(execution_time)
 save_metadata(current_id, execution_time)
-save_graphs(current_id, train_recon_losses, train_kl_losses, mu)
-# save_graphs(current_id, spectral_losses, representation_train_kl_losses, train_recon_losses, train_kl_losses, mu)
+save_graphs(current_id, spectral_losses, representation_train_kl_losses, mu)
 
 # Salvando o modelo de VAE treinado
 model.save('./models/vae_' + current_id + '.h5')
 
 # Gerando N espectrogramas a partir do espaço latente
-generated = model.sample(config.num_samples_generate, data, informative_dimensions, config.compact_latent_space)
+generated = model.sample(config.num_samples_generate, data, None, config.compact_latent_space)
 
 # Para cada espectrograma gerado, salva o resultado em formato de áudio e em um arquivo txt
 for i in range(config.num_samples_generate):

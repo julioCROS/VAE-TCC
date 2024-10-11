@@ -1,8 +1,10 @@
 import tensorflow as tf
-import torch
 from tensorflow.keras import layers
+import torch
+
 import numpy as np
 import auraloss
+import Discriminator
 
 class VAE(tf.keras.Model):
     def __init__(self, input_shape, latent_dim, hidden_dims, id, 
@@ -92,86 +94,54 @@ class VAE(tf.keras.Model):
     
     def representation_learning_train(self, data, epochs, optimizer):
         print("\n[Iniciando aprendizado de representação...]")
-        spectral_losses = []
+        signal_losses = []
         repr_kl_losses = []
         for epoch in range(epochs):
-            with tf.GradientTape() as tape:
-                outputs, inputs, mu, log_var = self(data)
-                spectral_loss = self.compute_spectral_loss(inputs, outputs)
-                kl_loss = -0.5 * tf.reduce_mean(tf.reduce_sum(1 + log_var - tf.square(mu) - tf.exp(log_var), axis=1))
-                loss = spectral_loss + self.kl_weight * kl_loss
-                
-                print(f"Segmento {segment_count} de {len(data)}.")
-                segment_count += 1
-
-            gradients = tape.gradient(loss, self.trainable_variables)
-            optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-
+            loss, signal_loss, kl_loss = self.train_step(data, optimizer)
+            
             if self.kl_weight < self.max_kl_weight:
                 self.kl_weight += self.kl_annealing_rate
                 self.kl_weight = min(self.kl_weight, self.max_kl_weight)
 
-            spectral_losses.append(spectral_loss.numpy())
+            signal_losses.append(signal_loss.numpy())
             repr_kl_losses.append(kl_loss.numpy())
-            print(f"[Epoca {epoch+1} | Spectral Loss: {spectral_loss.numpy()} | KL Loss: {kl_loss.numpy()} | Total Loss: {loss.numpy()}]")
-        return spectral_losses, repr_kl_losses
-
-    def compute_spectral_loss(self, real, fake):
-        # Converte os tensores de TensorFlow para NumPy
-        real_np = real.numpy()
-        fake_np = fake.numpy()
-
-        # Converte os arrays NumPy para tensores PyTorch
-        real_torch = torch.from_numpy(real_np).float()
-        fake_torch = torch.from_numpy(fake_np).float()
-
-        real_torch = real_torch.permute(0, 2, 1)
-        fake_torch = fake_torch.permute(0, 2, 1)
-
-        # Calcula a perda STFT usando auraloss
-        loss_fn = auraloss.time.SNRLoss()
-        spectral_loss = loss_fn(real_torch, fake_torch)
-
-        # Converte o resultado da perda de volta para TensorFlow
-        return tf.convert_to_tensor(spectral_loss.item())
-
-    def train(self, data, epochs, optimizer):
-        print("\n[Iniciando treinamento...]")
-        reconstruction_losses = []
-        kl_losses = []
-        for epoch in range(epochs):
-            loss, reconstruction_loss, kl_loss = self.train_step(data, optimizer) 
-            if self.kl_weight < self.max_kl_weight:
-                self.kl_weight += self.kl_annealing_rate
-                self.kl_weight = min(self.kl_weight, self.max_kl_weight)
-
-            reconstruction_losses.append(reconstruction_loss.numpy())
-            kl_losses.append(kl_loss.numpy())
-            print(f"[ Epoca {epoch+1} | Loss: {loss.numpy()} |  Recon. Loss: {reconstruction_loss.numpy()} | KL Loss: {kl_loss.numpy()}]")
-        return reconstruction_losses, kl_losses
+            print(f"[Epoca {epoch+1} | Signal Loss: {signal_loss.numpy()} | KL Loss: {kl_loss.numpy()} | Total Loss: {loss.numpy()}]")
+        return signal_losses, repr_kl_losses
     
     @tf.function
     def train_step(self, data, optimizer):
         with tf.GradientTape() as tape:
             outputs, inputs, mu, log_var = self(data)
-            loss, reconstruction_loss, kl_loss = self.loss_function(inputs, outputs, mu, log_var)
+            signal_loss = self.compute_signal_loss(inputs, outputs)
+            kl_loss = -0.5 * tf.reduce_mean(tf.reduce_sum(1 + log_var - tf.square(mu) - tf.exp(log_var), axis=1))
+            loss = signal_loss + self.kl_weight * kl_loss
+            
+            print(f"Segmento {segment_count} de {len(data)}.")
+            segment_count += 1
 
         gradients = tape.gradient(loss, self.trainable_variables)
         optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-        return loss, reconstruction_loss, kl_loss
-    
-    def loss_function(self, inputs, outputs, mu, log_var):
-        assert inputs.shape == outputs.shape, f"Shape mismatch: {inputs.shape} vs {outputs.shape}"
-        reconstruction_loss = tf.reduce_mean(tf.keras.losses.MeanSquaredError()(inputs, outputs))
-        kl_loss = -0.5 * tf.reduce_mean(tf.reduce_sum(1 + log_var - tf.square(mu) - tf.exp(log_var), axis=1))
+        return loss, signal_loss, kl_loss
 
-        latent_penalty = tf.reduce_mean(tf.abs(mu))
-        total_loss = reconstruction_loss + (self.kl_weight * kl_loss) + 0.1 * latent_penalty
-        return total_loss, reconstruction_loss, kl_loss
+    def compute_signal_loss(self, real, fake):
+        real_np = real.numpy()
+        fake_np = fake.numpy()
+
+        real_torch = torch.from_numpy(real_np).float()
+        fake_torch = torch.from_numpy(fake_np).float()
+
+        real_torch = real_torch.permute(0, 3, 1, 2).reshape(real_torch.shape[0], real_torch.shape[3], -1)
+        fake_torch = fake_torch.permute(0, 3, 1, 2).reshape(fake_torch.shape[0], fake_torch.shape[3], -1)
+
+        loss_fn = auraloss.time.SNRLoss()
+        signal_loss = loss_fn(real_torch, fake_torch)
+
+        return tf.convert_to_tensor(signal_loss.item())
     
     def adversarial_fine_tuning_train(self, data, epochs, generator_optimizer, discriminator_optimizer, discriminator):
-        print("Iniciando ajuste fino adversarial...")
+        print("[Iniciando ajuste fino adversarial...]")
         discriminator = Discriminator()
+
         for epoch in range(epochs):
             for real_data in data:
                 with tf.GradientTape() as tape_gen, tf.GradientTape() as tape_disc:
@@ -189,7 +159,7 @@ class VAE(tf.keras.Model):
                 generator_optimizer.apply_gradients(zip(gen_grads, self.decoder.trainable_variables))
                 discriminator_optimizer.apply_gradients(zip(disc_grads, discriminator.trainable_variables))
 
-            print(f"Epoch {epoch + 1} | Generator Loss: {gen_loss.numpy()} | Discriminator Loss: {disc_loss.numpy()}")
+            print(f"[Epoca {epoch + 1} | Generator Loss: {gen_loss.numpy()} | Discriminator Loss: {disc_loss.numpy()}]")
     
     def compact_latent_representation(self, data, fidelity_threshold=0.95):
         print("\n[Compactando a representação latente...]")
@@ -222,8 +192,8 @@ class VAE(tf.keras.Model):
             compact_latent = self.encode_compact(data, informative_dimensions)
             
             num_informative_dims = informative_dimensions.shape[1]  
-            print(f"compact_latent shape: {compact_latent.shape}")
-            print(f"num_informative_dims: {num_informative_dims}")
+            print(f"Formato do espaço latente compacto: {compact_latent.shape}")
+            print(f"Dimensões informativas: {num_informative_dims}")
             
             random_indices = tf.random.uniform(shape=(num_samples,), minval=0, maxval=len(compact_latent), dtype=tf.int32)
             sampled_latent = tf.gather(compact_latent, random_indices)
@@ -239,19 +209,3 @@ class VAE(tf.keras.Model):
 
     def generate(self, x):
         return self.call(x)[0]
-    
-class Discriminator(tf.keras.Model):
-    def __init__(self):
-        super(Discriminator, self).__init__()
-        self.model = tf.keras.Sequential([
-            layers.Conv2D(64, (4, 4), strides=(2, 2), padding="same"),
-            layers.LeakyReLU(),
-            layers.Conv2D(128, (4, 4), strides=(2, 2), padding="same"),
-            layers.LeakyReLU(),
-            layers.GlobalAveragePooling2D(),
-            layers.Dense(1)
-        ])
-
-    def call(self, inputs):
-        return self.model(inputs)
-
