@@ -91,34 +91,19 @@ def save_metadata(id, execution_time):
         file.write("_" * 50 + "\n")
         print(f"[Metadados salvos em {metadata_file}]\n")
 
-def save_graphs(id, train_recon_losses, train_kl_losses, mu, spectral_losses = None, representation_train_kl_losses = None,):
+def save_graphs(id, signal_losses, representation_train_kl_losses, mu):
     #representation_train_kl_losses = representation_train_kl_losses[10:]
-    train_kl_losses = train_kl_losses[10:]
 
     graph_file = './graphs/' + id + '.png'
-    
-    ''' 
-    fig, axs = plt.subplots(2, 3, figsize=(20, 15))
-    axs[0, 0].plot(spectral_losses)
-    axs[0, 0].set_title("Spectral Loss")
-    axs[0, 0].set_xlabel("Epoch")
-    axs[0, 0].set_ylabel("Loss")
-
-    axs[0, 1].plot(representation_train_kl_losses)
-    axs[0, 1].set_title("Representation Train KL Loss")
-    axs[0, 1].set_xlabel("Epoch")
-    axs[0, 1].set_ylabel("Loss")
-    '''
-
     fig, axs = plt.subplots(1, 3, figsize=(21, 7))
 
-    axs[0].plot(train_recon_losses)
-    axs[0].set_title("Train Recon Loss")
+    axs[0].plot(signal_losses)
+    axs[0].set_title("Signal Loss")
     axs[0].set_xlabel("Epoch")
     axs[0].set_ylabel("Loss")
 
-    axs[1].plot(train_kl_losses)
-    axs[1].set_title("Train KL Loss")
+    axs[1].plot(representation_train_kl_losses)
+    axs[1].set_title("KL Loss")
     axs[1].set_xlabel("Epoch")
     axs[1].set_ylabel("Loss")
 

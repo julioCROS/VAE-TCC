@@ -108,7 +108,6 @@ class VAE(tf.keras.Model):
             print(f"[Epoca {epoch+1} | Signal Loss: {signal_loss.numpy()} | KL Loss: {kl_loss.numpy()} | Total Loss: {loss.numpy()}]")
         return signal_losses, repr_kl_losses
     
-    @tf.function
     def train_step(self, data, optimizer):
         with tf.GradientTape() as tape:
             outputs, inputs, mu, log_var = self(data)
@@ -131,7 +130,6 @@ class VAE(tf.keras.Model):
         fake_torch = fake_torch.permute(0, 3, 1, 2).reshape(fake_torch.shape[0], fake_torch.shape[3], -1)
 
         loss_fn = auraloss.time.SNRLoss()
-        loss3 = auraloss.freq.MultiResolutionSTFTLoss()
         signal_loss = loss_fn(real_torch, fake_torch)
 
         return tf.convert_to_tensor(signal_loss.item())

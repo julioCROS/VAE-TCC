@@ -29,7 +29,7 @@ model = VAE(input_shape=data.shape, latent_dim=config.latent_dim, hidden_dims=co
 
 
 # Treinando a representação do modelo
-spectral_losses, representation_train_kl_losses = model.representation_learning_train(data, config.epochs, optimizer)
+signal_losses, representation_train_kl_losses = model.representation_learning_train(data, config.epochs, optimizer)
 
 # Treinando o modelo com adversarial fine-tuning
 #discriminator = Discriminator()
@@ -51,7 +51,7 @@ mu = mu.numpy()
 # Exibindo e salvando resultados
 show_results(execution_time)
 save_metadata(current_id, execution_time)
-save_graphs(current_id, spectral_losses, representation_train_kl_losses, mu)
+save_graphs(current_id, signal_losses, representation_train_kl_losses, mu)
 
 # Salvando o modelo de VAE treinado
 model.save('./models/vae_' + current_id + '.h5')

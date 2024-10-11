@@ -890,3 +890,21 @@ Kernel Sizes: [(5, 5), (5, 5), (3, 3)]
 Strides: [(3, 3), (3, 3), (2, 2)]
 Execution Time: 919.43 seconds
 __________________________________________________
+ID: SB9574
+Epochs: 1
+Num. audio samples: 2
+Num. Mels: 512
+Latent Dim: 8
+Compact Latent Space: False
+Audio Duration: 16
+Audio Rate: 11000
+Hidden Dims: [16, 32, 64, 128]
+KL Annealing Rate: 1.0
+Max KL Weight: 0.8
+Optimizer Learning Rate: 0.005
+Num. Segments: 2
+Shuffle Segments: False
+Kernel Sizes: [(6, 6), (6, 6), (3, 3)]
+Strides: [(3, 3), (3, 3), (2, 2)]
+Execution Time: 341.86 seconds
+__________________________________________________

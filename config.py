@@ -2,7 +2,7 @@
 epochs = 1
 num_mels = 512
 latent_dim = 8
-hidden_dims = [16, 32, 64, 128, 512]
+hidden_dims = [16, 32, 64, 128]
 compact_latent_space = False
 kl_annealing_rate = 1 / epochs
 max_kl_weight = 0.8
