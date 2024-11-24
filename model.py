@@ -7,7 +7,7 @@ from tensorflow.keras import layers
 class VAE_GAN(tf.keras.Model):
     def __init__(self, input_shape, latent_dim, hidden_dims, id, 
                  duration, rate, kernel_sizes, strides, loud_stride,
-                 batch_size, residual_depth, kl_beta=0.1, use_noise=False):
+                 batch_size, residual_depth, num_bands=16, kl_beta=0.1, use_noise=False):
         print("[Incializando VAE-GAN]")
         super(VAE_GAN, self).__init__()
         # Definindo variaveis iniciais do modelo
@@ -15,6 +15,7 @@ class VAE_GAN(tf.keras.Model):
         self.rate = rate
         self.kl_beta = kl_beta
         self.strides = strides
+        self.num_bands = num_bands
         self.duration = duration
         self.use_noise = use_noise
         self.batch_size = batch_size
@@ -76,7 +77,7 @@ class VAE_GAN(tf.keras.Model):
           # Realizando soma entre NoiseSynth e a multiplicação anterior
           output = layers.Add()([output, noisesynth])
       
-        final_output = layers.Conv1D(16, kernel_size=7, padding='same', activation=None)(output)
+        final_output = layers.Conv1D(self.num_bands, kernel_size=7, padding='same', activation=None)(output)
 
         output_length = self.input_shape[2]
         current_length = final_output.shape[1]
@@ -91,6 +92,7 @@ class VAE_GAN(tf.keras.Model):
             cropping_needed = current_length - output_length
             final_output = layers.Cropping1D(cropping=(0, cropping_needed))(final_output)
 
+        final_output = tf.keras.layers.Permute((2, 1))(final_output)
         self.decoder = tf.keras.Model(inputs, final_output, name="Decoder")
         print("\t\t - Forma de saída DECODER: ", final_output.shape)
 
