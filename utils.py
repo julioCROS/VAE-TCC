@@ -122,5 +122,3 @@ def save_graphs(id, signal_losses, representation_train_kl_losses, gen_lossess, 
     plt.savefig(graph_file)
     plt.close() 
     print(f"[Graficos salvos em {graph_file}]\n")
-
-

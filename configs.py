@@ -1,7 +1,7 @@
 # Parâmetros do modelo VAE
-EPOCHS = 5
+EPOCHS = 1500
 KL_BETA = 0.1
-BATCH_SIZE = -1
+BATCH_SIZE = 8
 LOUD_STRIDE = 1
 USE_NOISE = False
 LATENT_DIM = 128
@@ -20,9 +20,9 @@ DISCR_HIDDEN_DIMS = [64, 128, 256, 512]
 
 # Parâmetros de áudio
 NUM_BANDS = 16
-AUDIO_RATE = 44000
+AUDIO_RATE = 22000
 AUDIO_DURATION = 20
-NUM_AUDIO_SAMPLES = 1
+NUM_AUDIO_SAMPLES = 100
 AUDIO_PATH = '/content/drive/MyDrive/VAE_TCC/audio/pop/'
 
 # Parâmetros do otimizador

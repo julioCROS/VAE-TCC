@@ -55,6 +55,8 @@ class VAE_GAN(tf.keras.Model):
         factor = np.prod(self.strides)
         units = self.hidden_dims[-1] * (self.input_shape[2] // factor)
 
+        self.encoder_length = self.encoder.output_shape[0][1]
+
         inputs = layers.Input(shape=(1, self.latent_dim))
         x = tf.keras.layers.Permute((2, 1))(inputs)
         x = layers.Dense(units, activation = 'relu')(inputs)
@@ -136,15 +138,17 @@ class VAE_GAN(tf.keras.Model):
         curr_batch = 0
         total_loss = 0; total_rec_loss = 0; total_kl_loss = 0
         for batch_data in dataset:
-          loss, reconstruction_loss, kl_loss = self._train_step(data, optimizer) 
+          loss, reconstruction_loss, kl_loss = self._train_step(batch_data, optimizer) 
           total_loss = total_loss + loss.numpy()
           total_rec_loss = total_rec_loss + reconstruction_loss.numpy()
           total_kl_loss = total_kl_loss + kl_loss.numpy()
-        
-          if self.batch_size != -1 :
+        '''
+          if self.batch_size != -1 and epoch % 15 == 0:
             curr_batch += 1
             print(f"\t[ Batch {curr_batch} / {int(data.shape[0]/self.batch_size)} | Loss: {loss.numpy()} |  Recon. Loss: {reconstruction_loss.numpy()} | KL Loss: {kl_loss.numpy()}]")
-        print(f"[ Epoca {epoch+1} | Loss: {np.around(total_loss, 7)} |  Recon. Loss: {np.around(total_rec_loss, 7)} | KL Loss: {np.around(total_kl_loss, 7)}]") 
+        '''
+        if epoch % 15 == 0:
+            print(f"# [ Época {epoch+1} | Loss: {np.around(total_loss, 7)} |  Recon. Loss: {np.around(total_rec_loss, 7)} | KL Loss: {np.around(total_kl_loss, 7)}]") 
         reconstruction_losses.append(total_rec_loss)
         kl_losses.append(total_kl_loss)
       return reconstruction_losses, kl_losses
@@ -188,54 +192,105 @@ class VAE_GAN(tf.keras.Model):
             spectral_loss += _compute_stft_loss(inputs, outputs, scale)
         return spectral_loss
 
-    def train_gan(self, data, epochs, gen_optimizer, discr_optimizer, hidden_dims,
-                  kernel_sizes, strides):
-      # Treinamento adversarial
-      print("[Iniciando Ajuste Fino Adversarial]")
-      discriminator = Discriminator(hidden_dims, kernel_sizes, strides)
+    def train_gan(self, data, epochs, gen_optimizer, discr_optimizer, hidden_dims, kernel_sizes, strides):
+        print("[Iniciando Ajuste Fino Adversarial]")
+        
+        # Inicializar o Discriminador
+        discriminator = Discriminator(hidden_dims, kernel_sizes, strides)
 
-      if self.batch_size == -1:
-        dataset = tf.data.Dataset.from_tensor_slices(data).batch(data.shape[0])
-        print("[INFO] Dataset não dividido em Batches para o treinamento.\n")
-      else: 
-        print("[INFO] Dividindo dataset em batches para o treinamento.")
-        dataset = tf.data.Dataset.from_tensor_slices(data).batch(self.batch_size)
-        print(f"[INFO] Dataset dividido em batches de tamanho {self.batch_size} para o treinamento.\n")
- 
-      generator_losses = []
-      discriminator_losses = []
+        # Criar dataset
+        if self.batch_size == -1:
+            dataset = tf.data.Dataset.from_tensor_slices(data).batch(data.shape[0])
+            print("[INFO] Dataset não dividido em Batches para o treinamento.\n")
+        else: 
+            print("[INFO] Dividindo dataset em batches para o treinamento.")
+            dataset = tf.data.Dataset.from_tensor_slices(data).batch(self.batch_size)
+            print(f"[INFO] Dataset dividido em batches de tamanho {self.batch_size} para o treinamento.\n")
 
-      for epoch in range(epochs):
-        curr_batch = 0
-        generator_loss = 0; discriminator_loss = 0
-        for real_data in dataset:
-            with tf.GradientTape(persistent=True) as tape_gen, tf.GradientTape(persistent=True) as tape_disc:
-                fake_data, _, _, _ = self.call(real_data)
-                real_logits = discriminator(real_data)
-                fake_logits = discriminator(fake_data)
-                gen_loss = -tf.reduce_mean(fake_logits)
-                disc_loss = tf.reduce_mean(self._discriminator_loss(real_logits, fake_logits))
+        # Armazenar perdas
+        generator_losses = []
+        discriminator_losses = []
 
-            gen_grads = tape_gen.gradient(gen_loss, self.decoder.trainable_variables)
-            disc_grads = tape_disc.gradient(disc_loss, discriminator.trainable_variables)
-            gen_optimizer.apply_gradients(zip(gen_grads, self.decoder.trainable_variables))
-            discr_optimizer.apply_gradients(zip(disc_grads, discriminator.trainable_variables))
-            generator_loss = generator_loss + gen_loss.numpy()
-            discriminator_loss = discriminator_loss + disc_loss.numpy()           
+        for epoch in range(epochs):
+            curr_batch = 0
+            generator_loss_epoch = 0
+            discriminator_loss_epoch = 0
 
-            if self.batch_size != -1:
-              curr_batch += 1
-              print(f"\t[ Batch {curr_batch} / {int(data.shape[0]/self.batch_size)} | Generator Loss: {gen_loss.numpy()} |  Discriminator Loss: {disc_loss.numpy()}]")
-        print(f"[Epoca {epoch + 1} | Generator Loss: {generator_loss} | Discriminator Loss: {discriminator_loss}]")
-        generator_losses.append(generator_loss)
-        discriminator_losses.append(discriminator_loss)
+            for real_data in dataset:
+                with tf.GradientTape(persistent=True) as tape_gen, tf.GradientTape(persistent=True) as tape_disc:
+                    # Forward pass
+                    fake_data, _, _, _ = self.call(real_data)
+                    real_logits, real_features = discriminator(real_data, return_features=True)
+                    fake_logits, fake_features = discriminator(fake_data, return_features=True)
 
-      return generator_losses, discriminator_losses
+                    # Perdas
+                    gen_loss_adv = self._generator_loss(fake_logits)  # Perda adversarial do gerador
+                    fm_loss = self._feature_matching_loss(real_features, fake_features)  # Feature Matching
+                    spectral_loss = self._spectral_loss(real_data, fake_data)  # Perda espectral (S(x, Ŷ))
+                    gen_loss = gen_loss_adv + fm_loss + spectral_loss  # Perda total do gerador
+                    
+                    disc_loss = self._discriminator_loss(real_logits, fake_logits)  # Perda do discriminador
 
-    def _discriminator_loss(self, real_output, fake_output):
-      real_loss = tf.keras.losses.hinge(real_output, tf.ones_like(real_output))
-      fake_loss = tf.keras.losses.hinge(fake_output, -tf.ones_like(fake_output))
-      return real_loss + fake_loss
+                # Backpropagation
+                gen_grads = tape_gen.gradient(gen_loss, self.decoder.trainable_variables)
+                disc_grads = tape_disc.gradient(disc_loss, discriminator.trainable_variables)
+                gen_optimizer.apply_gradients(zip(gen_grads, self.decoder.trainable_variables))
+                discr_optimizer.apply_gradients(zip(disc_grads, discriminator.trainable_variables))
+
+                # Armazenar perdas
+                generator_loss_epoch += gen_loss.numpy()
+                discriminator_loss_epoch += disc_loss.numpy()
+                
+                '''
+                if self.batch_size != -1 and epoch % 15 == 0:
+                    curr_batch += 1
+                    print(f"\t[ Batch {curr_batch} / {int(data.shape[0]/self.batch_size)} | "
+                        f"Generator Loss: {gen_loss.numpy()} | Discriminator Loss: {disc_loss.numpy()} ]")
+                '''
+
+            # Perda por época
+            if epoch % 15 == 0:
+                print(f"# [Época {epoch + 1} | Generator Loss: {generator_loss_epoch} | Discriminator Loss: {discriminator_loss_epoch}]")
+            generator_losses.append(generator_loss_epoch)
+            discriminator_losses.append(discriminator_loss_epoch)
+
+        return generator_losses, discriminator_losses
+
+
+    def _generator_loss(self, fake_logits):
+        return -tf.reduce_mean(fake_logits)  # -E[D(Ŷ)]
+
+    def _discriminator_loss(self, real_logits, fake_logits):
+        real_loss = tf.reduce_mean(tf.nn.relu(1.0 - real_logits))  # max(0, 1 - D(x))
+        fake_loss = tf.reduce_mean(tf.nn.relu(1.0 + fake_logits))  # max(0, 1 + D(Ŷ))
+        return real_loss + fake_loss
+    
+    def _feature_matching_loss(self, real_features, fake_features):
+        fm_loss = 0
+        for real_f, fake_f in zip(real_features, fake_features):
+            fm_loss += tf.reduce_mean(tf.abs(real_f - fake_f))  # Feature Matching Loss
+        return fm_loss
+    
+
+    def _spectral_loss(self, real_data, fake_data):
+        # Converta tensores do TensorFlow para PyTorch
+        real_data_torch = torch.tensor(real_data.numpy(), dtype=torch.float32)
+        fake_data_torch = torch.tensor(fake_data.numpy(), dtype=torch.float32)
+
+        # Defina a função de perda espectral
+        spectral_loss_fn = auraloss.freq.MultiResolutionSTFTLoss(
+            fft_sizes=[1024, 2048, 8192],
+            hop_sizes=[256, 512, 2048],
+            win_lengths=[1024, 2048, 8192],
+            scale="mel",
+            n_bins=128,
+            perceptual_weighting=True,
+            sample_rate=self.rate  # Certifique-se de definir self.rate no modelo
+        )
+    
+        # Calcule a perda usando os tensores convertidos
+        loss = spectral_loss_fn(real_data_torch, fake_data_torch)
+        return loss.item()  # Retorna um valor escalar
     
     def compact_latent_representation(self, data, fidelity_threshold=0.95):
         print("\n[Compactando a representação latente...]")
@@ -370,7 +425,6 @@ class FilterNoiseBlock(layers.Layer):
         filtered_noise = x * white_noise
         return filtered_noise
 
-# Bloco referente ao Discriminador da GAN
 class Discriminator(tf.keras.Model):
     def __init__(self, hidden_dims, kernel_sizes, strides):
         super(Discriminator, self).__init__()
@@ -378,18 +432,42 @@ class Discriminator(tf.keras.Model):
         self.kernel_sizes = kernel_sizes
         self.strides = strides
 
+        # Definindo as camadas convolucionais
         self.conv_layers = [
             layers.Conv1D(h_dim, kernel_size=k, strides=s, padding="same")
             for h_dim, k, s in zip(self.hidden_dims, self.kernel_sizes, self.strides)
         ]
-        self.activation = layers.LeakyReLU()
-        self.output_layer = layers.Dense(1)
+        self.activation = layers.LeakyReLU()  # Ativação LeakyReLU
+        self.global_avg_pooling = layers.GlobalAveragePooling1D()  # Pooling global
+        self.output_layer = layers.Dense(1)  # Camada densa para logits finais
 
-    def call(self, inputs):
+    def call(self, inputs, return_features=False):
+        """
+        Argumentos:
+        - inputs: Tensor de entrada.
+        - return_features: Booleano indicando se deve retornar as features intermediárias.
+
+        Retorna:
+        - Se `return_features` for True: (logits, features)
+        - Caso contrário: logits
+        """
         x = inputs
+        features = []  # Lista para armazenar as features intermediárias
+
+        # Passa os dados pelas camadas convolucionais
         for conv in self.conv_layers:
             x = conv(x)
             x = self.activation(x)
-        x = layers.GlobalAveragePooling1D()(x)
-        output = self.output_layer(x)
-        return output
+            features.append(x)  # Armazena a ativação intermediária
+
+        # Global Average Pooling
+        x = self.global_avg_pooling(x)
+
+        # Camada de saída
+        logits = self.output_layer(x)
+
+        # Retorna features intermediárias, se solicitado
+        if return_features:
+            return logits, features
+        return logits
+

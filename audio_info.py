@@ -53,7 +53,7 @@ class AudioInfo:
       
       return np.array(subbands)
 
-    def multiband_synthesis(subbands, num_bands=16):
+    def multiband_synthesis(self, subbands, num_bands=16):
       num_taps = 512
       cutoff = 1 / (2 * num_bands)
       prototype_filter = firwin(num_taps, cutoff, window=('kaiser', 8.6))
@@ -65,15 +65,19 @@ class AudioInfo:
           filters.append(band_filter)
       filters = np.array(filters)
       
-      # Interpolação e aplicação dos filtros
+      # Inicializar o sinal de saída
       audio = np.zeros(len(subbands[0]) * num_bands)
+      
       for i, (band_filter, subband) in enumerate(zip(filters, subbands)):
           upsampled_signal = upfirdn([1], subband, up=num_bands)
           filtered_signal = lfilter(band_filter, [1.0], upsampled_signal)
-          audio += filtered_signal[:len(audio)]
-      
+          
+          # Ajustar o comprimento de filtered_signal, se necessário
+          if len(filtered_signal) < len(audio):
+              filtered_signal = np.pad(filtered_signal, (0, len(audio) - len(filtered_signal)), mode='constant')
+          elif len(filtered_signal) > len(audio):
+              filtered_signal = filtered_signal[:len(audio)]
+          
+          audio += filtered_signal
+        
       return audio
-    
-
-
-    
