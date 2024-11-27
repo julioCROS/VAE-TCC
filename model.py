@@ -38,10 +38,10 @@ class VAE_GAN(tf.keras.Model):
         x = inputs
         for h_dim, kernel, stride in zip(self.hidden_dims, self.kernel_sizes, self.strides):
             x = layers.BatchNormalization()(x)
-            x = layers.LeakyReLU(alpha=0.2)(x)
+            x = layers.LeakyReLU(0.2)(x)
             x = layers.Conv1D(h_dim, kernel_size=kernel, strides=stride, padding='same')(x)
 
-        x = layers.LeakyReLU(alpha=0.2)(x)
+        x = layers.LeakyReLU(0.2)(x)
         mu = layers.Conv1D(filters=self.latent_dim, kernel_size=5, padding='same')(x)
         log_var = layers.Conv1D(filters=self.latent_dim, kernel_size=1, padding='same')(x)
         self.encoder = tf.keras.Model(inputs=inputs, outputs=[mu, log_var], name="Encoder")
@@ -57,8 +57,7 @@ class VAE_GAN(tf.keras.Model):
 
         self.encoder_length = self.encoder.output_shape[0][1]
 
-        inputs = layers.Input(shape=(1, self.latent_dim))
-        x = tf.keras.layers.Permute((2, 1))(inputs)
+        inputs = layers.Input(shape=(self.encoder_length, self.latent_dim))
         x = layers.Dense(units, activation = 'relu')(inputs)
         x = layers.Reshape((self.input_shape[2] // factor, self.hidden_dims[-1]))(x)
         
@@ -293,51 +292,84 @@ class VAE_GAN(tf.keras.Model):
         return loss.item()  # Retorna um valor escalar
     
     def compact_latent_representation(self, data, fidelity_threshold=0.95):
-        print("\n[Compactando a representação latente...]")
-        mu, _ = self.encode(data)
-        mu = mu.numpy() 
+        # Calcular a média e centralizar os dados
+        mu = np.mean(data, axis=0)  # Média sobre o batch
+        mu_centered = data - mu    # Centralizar os dados
+        
+        # Remodelar para SVD
+        reshaped_mu = mu_centered.reshape(-1, mu_centered.shape[-1])  # Forma: (batch_size * latent_dim, feature_dim)
+        
+        # Calcular SVD
+        U, S, Vt = np.linalg.svd(reshaped_mu, full_matrices=False)
 
-        mu_centered = mu - np.mean(mu, axis=0)
-
-        U, S, Vt = np.linalg.svd(mu_centered, full_matrices=False)
+        # Calcular variância acumulada e número de dimensões informativas
         variance_explained = np.cumsum(S**2) / np.sum(S**2)
         num_informative_dims = np.searchsorted(variance_explained, fidelity_threshold) + 1
-
+        self.num_informative_dims = num_informative_dims
         print(f"[Dimensões informativas selecionadas: {num_informative_dims} de {self.latent_dim}]\n")
 
-        self.num_informative_dims = num_informative_dims
-        self.informative_dimensions = Vt[:num_informative_dims]
-
-        reduced_latent = np.matmul(mu_centered, Vt.T[:, :num_informative_dims])
+        # Selecionar dimensões informativas
+        self.informative_dimensions = Vt[:num_informative_dims, :]  # (num_informative_dims, feature_dim)
+        print(f"[Dimensões informativas: {self.informative_dimensions.shape}]")
+        
+        # Reduzir a representação latente
+        reduced_latent = np.matmul(reshaped_mu, Vt.T[:, :num_informative_dims])  # (batch_size * latent_dim, num_informative_dims)
+        reduced_latent = reduced_latent.reshape(data.shape[0], data.shape[1], -1)  # Reshape para formato original reduzido
+        
         return reduced_latent
 
     def _encode_compact(self, data, informative_dimensions):
-        mu, _ = self.encode(data)
-        mu_centered = mu - np.mean(mu, axis=0)
+        # Obtém a média do espaço latente
+        mu, _ = self.encode(data)  # mu: (batch_size, 1, latent_dim)
 
-        compact_latent = np.dot(mu_centered, informative_dimensions.T)
+        # Centraliza os dados
+        mu_centered = mu - tf.reduce_mean(mu, axis=0)  # mu_centered: (batch_size, 1, latent_dim)
+
+        # Validação de compatibilidade dimensional
+        if mu_centered.shape[-1] != informative_dimensions.shape[-1]:
+            raise ValueError(
+                f"As dimensões não são compatíveis para a projeção: "
+                f"mu_centered.shape={mu_centered.shape}, "
+                f"informative_dimensions.shape={informative_dimensions.shape}"
+            )
+
+        # Projeta nas dimensões informativas
+        compact_latent = tf.linalg.matmul(mu_centered, informative_dimensions, transpose_b=True)
         return compact_latent
-
+    
     def sample(self, num_samples, data, compact_latent_space):
         if compact_latent_space is False:
+            print("[Amostragem de espaço latente completo]")
             z = tf.random.normal(shape=(num_samples, self.encoder_length, self.latent_dim))
             return self.decode(z)
         else:
+            # Verificar se o espaço latente compacto está configurado
+            print("[Amostragem de espaço latente compacto]")
+            if not hasattr(self, 'informative_dimensions') or not hasattr(self, 'num_informative_dims'):
+                raise ValueError("O espaço latente compacto não está configurado. Certifique-se de executar compact_latent_representation antes.")
+            
+            # Gerar espaço latente compacto
             compact_latent = self._encode_compact(data, self.informative_dimensions)
 
             print(f"Formato do espaço latente compacto: {compact_latent.shape}")
-            print(f"Dimensões informativas:: {self.num_informative_dims}")
+            print(f"Dimensões informativas: {self.num_informative_dims}")
 
             # Seleciona amostras aleatórias do espaço latente compacto
-            random_indices = tf.random.uniform(shape=(num_samples,), minval=0, maxval=len(compact_latent), dtype=tf.int32)
-            sampled_latent = tf.gather(compact_latent, random_indices)
+            random_indices = tf.random.uniform(shape=(num_samples,), minval=0, maxval=tf.shape(compact_latent)[0], dtype=tf.int32)
+            sampled_latent = tf.gather(compact_latent, random_indices, axis=0)
+
+            print(f"Amostras de espaço latente compacto: {sampled_latent.shape}")
 
             # Ajusta para a dimensão completa do espaço latente original, preenchendo com zeros
-            sampled_latent_padded = tf.pad(sampled_latent, [[0, 0], [0, self.latent_dim - self.num_informative_dims]])
-            sampled_latent_padded = tf.reshape(sampled_latent_padded, (num_samples, self.latent_dim))
+            sampled_latent_padded = tf.pad(
+                sampled_latent,
+                paddings=[[0, 0], [0, 0], [0, self.latent_dim - self.num_informative_dims]],
+            )
+            sampled_latent_padded = tf.reshape(sampled_latent_padded, (num_samples, self.encoder_length, self.latent_dim))
 
             # Decodifica as amostras ajustadas
             generated_samples = self.decode(sampled_latent_padded)
+            print(f"Amostras finais geradas: {generated_samples.shape}")
             return generated_samples
 
     def generate(self, x):
@@ -370,7 +402,7 @@ class UpsamplingBlock(layers.Layer):
         self.stride = stride
 
     def call(self, x):
-      x = layers.LeakyReLU(alpha=0.2)(x)
+      x = layers.LeakyReLU(0.2)(x)
       x = layers.Conv1DTranspose(self.h_dim, kernel_size=self.kernel, strides=self.stride, padding='same')(x)
       return x
   
