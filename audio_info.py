@@ -2,6 +2,7 @@ import os
 import random
 import librosa
 import numpy as np
+import tensorflow as tf
 from scipy.signal import firwin, lfilter, upfirdn
 
 class AudioInfo:
@@ -51,33 +52,35 @@ class AudioInfo:
           decimated_signal = filtered_signal[::num_bands]
           subbands.append(decimated_signal)
       
-      return np.array(subbands)
+      subbands = np.array(subbands)  
+      return subbands.T  
 
     def multiband_synthesis(self, subbands, num_bands=16):
+      # Filtro prototípico (usando janela Kaiser)
       num_taps = 512
       cutoff = 1 / (2 * num_bands)
       prototype_filter = firwin(num_taps, cutoff, window=('kaiser', 8.6))
-      
+      # Geração dos filtros modulados
       filters = []
       for k in range(num_bands):
           modulation = np.cos(2 * np.pi * k * (np.arange(num_taps) - (num_taps // 2)) / num_bands)
           band_filter = prototype_filter * modulation
           filters.append(band_filter)
       filters = np.array(filters)
-      
+      # Transformar para o formato original para processamento interno
+      if isinstance(subbands, tf.Tensor):
+            subbands = subbands.numpy()
+      subbands = subbands.T  
       # Inicializar o sinal de saída
       audio = np.zeros(len(subbands[0]) * num_bands)
-      
       for i, (band_filter, subband) in enumerate(zip(filters, subbands)):
           upsampled_signal = upfirdn([1], subband, up=num_bands)
           filtered_signal = lfilter(band_filter, [1.0], upsampled_signal)
-          
           # Ajustar o comprimento de filtered_signal, se necessário
           if len(filtered_signal) < len(audio):
               filtered_signal = np.pad(filtered_signal, (0, len(audio) - len(filtered_signal)), mode='constant')
           elif len(filtered_signal) > len(audio):
               filtered_signal = filtered_signal[:len(audio)]
-          
           audio += filtered_signal
         
       return audio

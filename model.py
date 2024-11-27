@@ -1,3 +1,4 @@
+import gc
 import torch
 import auraloss
 import numpy as np
@@ -49,53 +50,54 @@ class VAE_GAN(tf.keras.Model):
         print("\t\t - Forma de saída LOG_VAR: ", log_var.shape)
 
     def build_decoder(self):
-        # Construindo Decoder
         print("\n\t[CONSTRUINDO DECODER]")
 
-        factor = np.prod(self.strides)
-        units = self.hidden_dims[-1] * (self.input_shape[2] // factor)
-
+        factor = np.prod(self.strides)  # Fator acumulado das strides
         self.encoder_length = self.encoder.output_shape[0][1]
+        total_decoder_units = self.hidden_dims[-1] * self.encoder_length  # Total de unidades geradas
 
+        print("\t[INFO]Formato de entrada: ", self.input_shape)
+        print("\t[INFO]Comprimento do Encoder: ", self.encoder_length)
+        print("\t[INFO]Fator de Decodificação: ", factor)
+        print("\t[INFO]Unidades do Decoder: ", total_decoder_units)
+
+        # Entrada do decoder
         inputs = layers.Input(shape=(self.encoder_length, self.latent_dim))
-        x = layers.Dense(units, activation = 'relu')(inputs)
-        x = layers.Reshape((self.input_shape[2] // factor, self.hidden_dims[-1]))(x)
-        
+        x = inputs
+
+        # Decodificação
         for h_dim, kernel, stride in zip(self.hidden_dims[::-1], self.kernel_sizes, self.strides):
-          x = UpsamplingBlock(h_dim, kernel, stride)(x)
-          x = ResidualBlock(h_dim, kernel, self.residual_depth)(x)
+            x = UpsamplingBlock(h_dim, kernel, stride)(x)
+            x = ResidualBlock(h_dim, kernel, self.residual_depth)(x)
 
-        # Realizando multiplicação de Waveform e Loudness
-        waveform_layer =  layers.Conv1D(1, kernel_size=7, padding='same', activation='tanh')
-        waveform = waveform_layer(x)  
-        loudness_layer = layers.Conv1D(1, kernel_size=2 * self.loud_stride + 1, 
-                                            strides=self.loud_stride, padding='same', activation='sigmoid')
-        loudness = loudness_layer(x)  
-        output = layers.Multiply()([waveform, loudness]) 
+        # Waveform e Loudness
+        waveform_layer = layers.Conv1D(self.num_bands, kernel_size=7, padding='same', activation='tanh')
+        waveform = waveform_layer(x)
+        loudness_layer = layers.Conv1D(self.num_bands, kernel_size=2 * self.loud_stride + 1, 
+                                    strides=self.loud_stride, padding='same', activation='sigmoid')
+        loudness = loudness_layer(x)
+        output = layers.Multiply()([waveform, loudness])
 
+        # Adicionando ruído, se configurado
         if self.use_noise:
-          noisesynth = NoiseSynthBlock(hidden_dims=self.hidden_dims, kernel_size=3)(x)
-          # Realizando soma entre NoiseSynth e a multiplicação anterior
-          output = layers.Add()([output, noisesynth])
-      
-        final_output = layers.Conv1D(self.num_bands, kernel_size=7, padding='same', activation=None)(output)
+            noisesynth = NoiseSynthBlock(hidden_dims=self.hidden_dims, kernel_size=3)(x)
+            output = layers.Add()([output, noisesynth])
 
-        output_length = self.input_shape[2]
-        current_length = final_output.shape[1]
- 
-        # Ajustando o formato da saída final, aumentando ou diminuindo seu tamanho
+        # Ajustar o comprimento da saída final
+        output_length = self.input_shape[1]
+        current_length = output.shape[1]
+
         if current_length < output_length:
-            print(f"\t[INFO] Padding necessário para equivalência de saídas. ({current_length} != {output_length})")
+            print(f"\t[INFO] Padding necessário ({current_length} != {output_length})")
             padding_needed = output_length - current_length
-            final_output = layers.ZeroPadding1D(padding=(0, padding_needed))(final_output)
+            output = layers.ZeroPadding1D(padding=(0, padding_needed))(output)
         elif current_length > output_length:
-            print(f"\t[INFO] Cropping necessário para equivalência de saídas. ({current_length} != {output_length})")
+            print(f"\t[INFO] Cropping necessário ({current_length} != {output_length})")
             cropping_needed = current_length - output_length
-            final_output = layers.Cropping1D(cropping=(0, cropping_needed))(final_output)
+            output = layers.Cropping1D(cropping=(0, cropping_needed))(output)
 
-        final_output = tf.keras.layers.Permute((2, 1))(final_output)
-        self.decoder = tf.keras.Model(inputs, final_output, name="Decoder")
-        print("\t\t - Forma de saída DECODER: ", final_output.shape)
+        self.decoder = tf.keras.Model(inputs, output, name="Decoder")
+        print("\t\t - Forma de saída DECODER: ", output.shape)
 
     def call(self, inputs):
         # Chamada padrão do modelo
@@ -147,9 +149,10 @@ class VAE_GAN(tf.keras.Model):
             print(f"\t[ Batch {curr_batch} / {int(data.shape[0]/self.batch_size)} | Loss: {loss.numpy()} |  Recon. Loss: {reconstruction_loss.numpy()} | KL Loss: {kl_loss.numpy()}]")
         '''
         if epoch % 15 == 0:
-            print(f"# [ Época {epoch+1} | Loss: {np.around(total_loss, 7)} |  Recon. Loss: {np.around(total_rec_loss, 7)} | KL Loss: {np.around(total_kl_loss, 7)}]") 
+            print(f"# [ Epoca {epoch+1} | Loss: {np.around(total_loss, 7)} |  Recon. Loss: {np.around(total_rec_loss, 7)} | KL Loss: {np.around(total_kl_loss, 7)}]") 
         reconstruction_losses.append(total_rec_loss)
         kl_losses.append(total_kl_loss)
+        gc.collect()
       return reconstruction_losses, kl_losses
 
     def _train_step(self, data, optimizer):
@@ -168,6 +171,10 @@ class VAE_GAN(tf.keras.Model):
 
     def _multiscale_spectral_loss(self, inputs, outputs, scales=[2048, 1024, 512, 256, 128]):
         def _compute_stft_loss(x, y, n_fft):
+            # Transpor dados para (batch size, time steps) antes de calcular a STFT
+            x = tf.transpose(x, perm=[0, 2, 1])  
+            y = tf.transpose(y, perm=[0, 2, 1])
+
             # Calcula STFT
             stft_x = tf.signal.stft(x, frame_length=n_fft, frame_step=n_fft // 4, fft_length=n_fft)
             stft_y = tf.signal.stft(y, frame_length=n_fft, frame_step=n_fft // 4, fft_length=n_fft)
@@ -182,14 +189,15 @@ class VAE_GAN(tf.keras.Model):
             l1_diff = tf.reduce_sum(tf.abs(stft_x_mag - stft_y_mag), axis=(-2, -1))
 
             # Distância final para esta escala
-            scale_loss = (norm_diff / norm_ref) + tf.math.log(l1_diff + 1e-8)
+            scale_loss = (norm_diff / (norm_ref + 1e-8)) + tf.math.log(l1_diff + 1e-8)
             return tf.reduce_mean(scale_loss)
 
-        # Acumula a distância espectral para todas as escalas
-        spectral_loss = 0.0
+        # Computa a perda multiescala
+        total_loss = 0
         for scale in scales:
-            spectral_loss += _compute_stft_loss(inputs, outputs, scale)
-        return spectral_loss
+            total_loss += _compute_stft_loss(inputs, outputs, n_fft=scale)
+
+        return total_loss
 
     def train_gan(self, data, epochs, gen_optimizer, discr_optimizer, hidden_dims, kernel_sizes, strides):
         print("[Iniciando Ajuste Fino Adversarial]")
@@ -219,16 +227,20 @@ class VAE_GAN(tf.keras.Model):
                 with tf.GradientTape(persistent=True) as tape_gen, tf.GradientTape(persistent=True) as tape_disc:
                     # Forward pass
                     fake_data, _, _, _ = self.call(real_data)
+
                     real_logits, real_features = discriminator(real_data, return_features=True)
                     fake_logits, fake_features = discriminator(fake_data, return_features=True)
+                    disc_loss = self._discriminator_loss(real_logits, fake_logits)  # Perda do discriminador
+
+                    # Transpor dados
+                    real_data = tf.transpose(real_data, perm=[0, 2, 1])  
+                    fake_data = tf.transpose(fake_data, perm=[0, 2, 1])
 
                     # Perdas
                     gen_loss_adv = self._generator_loss(fake_logits)  # Perda adversarial do gerador
                     fm_loss = self._feature_matching_loss(real_features, fake_features)  # Feature Matching
                     spectral_loss = self._spectral_loss(real_data, fake_data)  # Perda espectral (S(x, Ŷ))
                     gen_loss = gen_loss_adv + fm_loss + spectral_loss  # Perda total do gerador
-                    
-                    disc_loss = self._discriminator_loss(real_logits, fake_logits)  # Perda do discriminador
 
                 # Backpropagation
                 gen_grads = tape_gen.gradient(gen_loss, self.decoder.trainable_variables)
@@ -249,10 +261,10 @@ class VAE_GAN(tf.keras.Model):
 
             # Perda por época
             if epoch % 15 == 0:
-                print(f"# [Época {epoch + 1} | Generator Loss: {generator_loss_epoch} | Discriminator Loss: {discriminator_loss_epoch}]")
+                print(f"# [Epoca {epoch + 1} | Generator Loss: {generator_loss_epoch} | Discriminator Loss: {discriminator_loss_epoch}]")
             generator_losses.append(generator_loss_epoch)
             discriminator_losses.append(discriminator_loss_epoch)
-
+            gc.collect()
         return generator_losses, discriminator_losses
 
 
@@ -339,26 +351,26 @@ class VAE_GAN(tf.keras.Model):
     
     def sample(self, num_samples, data, compact_latent_space):
         if compact_latent_space is False:
-            print("[Amostragem de espaço latente completo]")
+            print("[Amostragem de espaço latente COMPLETO]")
             z = tf.random.normal(shape=(num_samples, self.encoder_length, self.latent_dim))
             return self.decode(z)
         else:
             # Verificar se o espaço latente compacto está configurado
-            print("[Amostragem de espaço latente compacto]")
+            print("[Amostragem de espaço latente COMPACTO]")
             if not hasattr(self, 'informative_dimensions') or not hasattr(self, 'num_informative_dims'):
-                raise ValueError("O espaço latente compacto não está configurado. Certifique-se de executar compact_latent_representation antes.")
+                raise ValueError("\t[ERROR]O espaço latente compacto não está configurado. Certifique-se de executar compact_latent_representation antes.")
             
             # Gerar espaço latente compacto
             compact_latent = self._encode_compact(data, self.informative_dimensions)
 
-            print(f"Formato do espaço latente compacto: {compact_latent.shape}")
-            print(f"Dimensões informativas: {self.num_informative_dims}")
+            print(f"\t[INFO]Formato do espaço latente compacto: {compact_latent.shape}")
+            print(f"\t[INFO]Dimensões informativas: {self.num_informative_dims}")
 
             # Seleciona amostras aleatórias do espaço latente compacto
             random_indices = tf.random.uniform(shape=(num_samples,), minval=0, maxval=tf.shape(compact_latent)[0], dtype=tf.int32)
             sampled_latent = tf.gather(compact_latent, random_indices, axis=0)
 
-            print(f"Amostras de espaço latente compacto: {sampled_latent.shape}")
+            print(f"\t[INFO]Amostras de espaço latente compacto: {sampled_latent.shape}")
 
             # Ajusta para a dimensão completa do espaço latente original, preenchendo com zeros
             sampled_latent_padded = tf.pad(
@@ -369,7 +381,7 @@ class VAE_GAN(tf.keras.Model):
 
             # Decodifica as amostras ajustadas
             generated_samples = self.decode(sampled_latent_padded)
-            print(f"Amostras finais geradas: {generated_samples.shape}")
+            print(f"\t[INFO]Amostras finais geradas: {generated_samples.shape}")
             return generated_samples
 
     def generate(self, x):
