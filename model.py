@@ -164,6 +164,10 @@ class VAE_GAN(tf.keras.Model):
         return loss, reconstruction_loss, kl_loss
 
     def _loss_function(self, inputs, outputs, mu, log_var):
+        # Transpor para (batch_size, time_steps)
+        inputs = tf.transpose(inputs, perm=[0, 2, 1])  
+        outputs = tf.transpose(outputs, perm=[0, 2, 1])
+
         spectral_loss = self._multiscale_spectral_loss(inputs, outputs)
         kl_loss = -0.5 * tf.reduce_mean(tf.reduce_sum(1 + log_var - tf.square(mu) - tf.exp(log_var), axis=1))
         total_loss = spectral_loss + self.kl_beta * kl_loss
@@ -171,33 +175,29 @@ class VAE_GAN(tf.keras.Model):
 
     def _multiscale_spectral_loss(self, inputs, outputs, scales=[2048, 1024, 512, 256, 128]):
         def _compute_stft_loss(x, y, n_fft):
-            # Transpor para (batch_size, time_steps)
-            x = tf.transpose(x, perm=[0, 2, 1])  
-            y = tf.transpose(y, perm=[0, 2, 1])
-
-            # Calcula STFT
+            # Calcula a STFT
             stft_x = tf.signal.stft(x, frame_length=n_fft, frame_step=n_fft // 4, fft_length=n_fft)
             stft_y = tf.signal.stft(y, frame_length=n_fft, frame_step=n_fft // 4, fft_length=n_fft)
 
             # Magnitude do espectro
-            stft_x_mag = tf.abs(stft_x)
-            stft_y_mag = tf.abs(stft_y)
+            stft_x_mag = tf.cast(tf.abs(stft_x), dtype=tf.float32)
+            stft_y_mag = tf.cast(tf.abs(stft_y), dtype=tf.float32)
 
-            # Log Spectral Loss
-            log_loss = tf.reduce_mean(tf.abs(tf.math.log1p(stft_x_mag) - tf.math.log1p(stft_y_mag)))
+            # Frobenius Loss
+            frobenius_loss = tf.sqrt(tf.reduce_sum(tf.square(stft_x_mag - stft_y_mag))) / tf.sqrt(tf.reduce_sum(tf.square(stft_x_mag)))
 
             # L1 Loss
-            l1_loss = tf.reduce_mean(tf.abs(stft_x_mag - stft_y_mag))
+            l1_loss = tf.math.log(tf.reduce_mean(tf.abs(stft_x_mag - stft_y_mag)))
 
             # Retorna a soma das perdas
-            return log_loss + l1_loss
+            return frobenius_loss + l1_loss
 
         # Combina perdas em múltiplas escalas
         total_loss = 0
         for scale in scales:
             total_loss += _compute_stft_loss(inputs, outputs, n_fft=scale)
 
-        return total_loss
+        return total_loss / len(scales)
 
     def train_gan(self, data, epochs, gen_optimizer, discr_optimizer, hidden_dims, kernel_sizes, strides):
         print("[Iniciando Ajuste Fino Adversarial]")
@@ -238,8 +238,8 @@ class VAE_GAN(tf.keras.Model):
 
                     # Perdas
                     gen_loss_adv = self._generator_loss(fake_logits)  # Perda adversarial do gerador
+                    spectral_loss = self._multiscale_spectral_loss(real_data, fake_data)  # Perda espectral (S(x, Ŷ))
                     fm_loss = self._feature_matching_loss(real_features, fake_features)  # Feature Matching
-                    spectral_loss = self._spectral_loss(real_data, fake_data)  # Perda espectral (S(x, Ŷ))
                     gen_loss = gen_loss_adv + fm_loss + spectral_loss  # Perda total do gerador
 
                 # Backpropagation
@@ -272,45 +272,15 @@ class VAE_GAN(tf.keras.Model):
         return -tf.reduce_mean(fake_logits)  # -E[D(Ŷ)]
 
     def _discriminator_loss(self, real_logits, fake_logits):
-        real_loss = tf.reduce_mean(tf.nn.relu(1.0 - real_logits))  # max(0, 1 - D(x))
-        fake_loss = tf.reduce_mean(tf.nn.relu(1.0 + fake_logits))  # max(0, 1 + D(Ŷ))
-        return real_loss + fake_loss
+        real_loss = tf.nn.relu(1.0 - real_logits) # max(0, 1 - D(x))
+        fake_loss = tf.reduce_mean(tf.nn.relu(1.0 + fake_logits))  # E [max(0, 1 + D(Ŷ))]
+        return tf.reduce_mean(real_loss + fake_loss)
     
     def _feature_matching_loss(self, real_features, fake_features):
         fm_loss = 0
         for real_f, fake_f in zip(real_features, fake_features):
             fm_loss += tf.reduce_mean(tf.abs(real_f - fake_f))  # Feature Matching Loss
-        return fm_loss
-    
-    def _spectral_loss(self, real_data, fake_data):
-        def _compute_stft_loss(real, fake, n_fft, hop_size, win_length):
-            # STFT
-            stft_real = tf.signal.stft(real, frame_length=win_length, frame_step=hop_size, fft_length=n_fft)
-            stft_fake = tf.signal.stft(fake, frame_length=win_length, frame_step=hop_size, fft_length=n_fft)
-
-            # Magnitude do espectro
-            mag_real = tf.cast(tf.abs(stft_real), tf.float32)
-            mag_fake = tf.cast(tf.abs(stft_fake), tf.float32)  
-
-            # Log Spectral Loss
-            log_loss = tf.reduce_mean(tf.abs(tf.math.log1p(mag_real) - tf.math.log1p(mag_fake)))
-
-            # L1 Loss
-            l1_loss = tf.reduce_mean(tf.abs(mag_real - mag_fake))
-
-            return log_loss + l1_loss
-
-        # Parâmetros multirresolução
-        fft_sizes = [1024, 2048, 8192]
-        hop_sizes = [256, 512, 2048]
-        win_lengths = [1024, 2048, 8192]
-
-        # Perda total multirresolução
-        total_loss = 0
-        for fft, hop, win in zip(fft_sizes, hop_sizes, win_lengths):
-            total_loss += _compute_stft_loss(real_data, fake_data, fft, hop, win)
-
-        return total_loss
+        return fm_loss / len(real_features)
     
     def compact_latent_representation(self, data, fidelity_threshold=0.95):
         # Calcular a média e centralizar os dados
