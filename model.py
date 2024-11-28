@@ -171,7 +171,7 @@ class VAE_GAN(tf.keras.Model):
 
     def _multiscale_spectral_loss(self, inputs, outputs, scales=[2048, 1024, 512, 256, 128]):
         def _compute_stft_loss(x, y, n_fft):
-            # Transpor dados para (batch size, time steps) antes de calcular a STFT
+            # Transpor para (batch_size, time_steps)
             x = tf.transpose(x, perm=[0, 2, 1])  
             y = tf.transpose(y, perm=[0, 2, 1])
 
@@ -179,20 +179,20 @@ class VAE_GAN(tf.keras.Model):
             stft_x = tf.signal.stft(x, frame_length=n_fft, frame_step=n_fft // 4, fft_length=n_fft)
             stft_y = tf.signal.stft(y, frame_length=n_fft, frame_step=n_fft // 4, fft_length=n_fft)
 
-            # Amplitude da STFT
+            # Magnitude do espectro
             stft_x_mag = tf.abs(stft_x)
             stft_y_mag = tf.abs(stft_y)
 
-            # Calcula a distância usando a norma de Frobenius e L1
-            norm_diff = tf.norm(stft_x_mag - stft_y_mag, ord='fro', axis=(-2, -1))
-            norm_ref = tf.norm(stft_x_mag, ord='fro', axis=(-2, -1))
-            l1_diff = tf.reduce_sum(tf.abs(stft_x_mag - stft_y_mag), axis=(-2, -1))
+            # Log Spectral Loss
+            log_loss = tf.reduce_mean(tf.abs(tf.math.log1p(stft_x_mag) - tf.math.log1p(stft_y_mag)))
 
-            # Distância final para esta escala
-            scale_loss = (norm_diff / (norm_ref + 1e-8)) + tf.math.log(l1_diff + 1e-8)
-            return tf.reduce_mean(scale_loss)
+            # L1 Loss
+            l1_loss = tf.reduce_mean(tf.abs(stft_x_mag - stft_y_mag))
 
-        # Computa a perda multiescala
+            # Retorna a soma das perdas
+            return log_loss + l1_loss
+
+        # Combina perdas em múltiplas escalas
         total_loss = 0
         for scale in scales:
             total_loss += _compute_stft_loss(inputs, outputs, n_fft=scale)
@@ -282,26 +282,35 @@ class VAE_GAN(tf.keras.Model):
             fm_loss += tf.reduce_mean(tf.abs(real_f - fake_f))  # Feature Matching Loss
         return fm_loss
     
-
     def _spectral_loss(self, real_data, fake_data):
-        # Converta tensores do TensorFlow para PyTorch
-        real_data_torch = torch.tensor(real_data.numpy(), dtype=torch.float32)
-        fake_data_torch = torch.tensor(fake_data.numpy(), dtype=torch.float32)
+        def _compute_stft_loss(real, fake, n_fft, hop_size, win_length):
+            # STFT
+            stft_real = tf.signal.stft(real, frame_length=win_length, frame_step=hop_size, fft_length=n_fft)
+            stft_fake = tf.signal.stft(fake, frame_length=win_length, frame_step=hop_size, fft_length=n_fft)
 
-        # Defina a função de perda espectral
-        spectral_loss_fn = auraloss.freq.MultiResolutionSTFTLoss(
-            fft_sizes=[1024, 2048, 8192],
-            hop_sizes=[256, 512, 2048],
-            win_lengths=[1024, 2048, 8192],
-            scale="mel",
-            n_bins=128,
-            perceptual_weighting=True,
-            sample_rate=self.rate  # Certifique-se de definir self.rate no modelo
-        )
-    
-        # Calcule a perda usando os tensores convertidos
-        loss = spectral_loss_fn(real_data_torch, fake_data_torch)
-        return loss.item()  # Retorna um valor escalar
+            # Magnitude do espectro
+            mag_real = tf.cast(tf.abs(stft_real), tf.float32)
+            mag_fake = tf.cast(tf.abs(stft_fake), tf.float32)  
+
+            # Log Spectral Loss
+            log_loss = tf.reduce_mean(tf.abs(tf.math.log1p(mag_real) - tf.math.log1p(mag_fake)))
+
+            # L1 Loss
+            l1_loss = tf.reduce_mean(tf.abs(mag_real - mag_fake))
+
+            return log_loss + l1_loss
+
+        # Parâmetros multirresolução
+        fft_sizes = [1024, 2048, 8192]
+        hop_sizes = [256, 512, 2048]
+        win_lengths = [1024, 2048, 8192]
+
+        # Perda total multirresolução
+        total_loss = 0
+        for fft, hop, win in zip(fft_sizes, hop_sizes, win_lengths):
+            total_loss += _compute_stft_loss(real_data, fake_data, fft, hop, win)
+
+        return total_loss
     
     def compact_latent_representation(self, data, fidelity_threshold=0.95):
         # Calcular a média e centralizar os dados
