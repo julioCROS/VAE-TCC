@@ -8,7 +8,9 @@ from tensorflow.keras import layers
 class VAE_GAN(tf.keras.Model):
     def __init__(self, input_shape, latent_dim, hidden_dims, id, 
                  duration, rate, kernel_sizes, strides, loud_stride,
-                 batch_size, residual_depth, num_bands=16, kl_beta=0.1, use_noise=False):
+                 batch_size, residual_depth, epoch_print = 1, delta = 0.1,
+                 patience = 15, min_kl_loss = 0.1, num_bands=16, kl_beta=0.1,
+                 use_noise=False):
         print("[Incializando VAE-GAN]")
         super(VAE_GAN, self).__init__()
         # Definindo variaveis iniciais do modelo
@@ -16,6 +18,9 @@ class VAE_GAN(tf.keras.Model):
         self.rate = rate
         self.kl_beta = kl_beta
         self.strides = strides
+        self.delta = delta
+        self.patience = patience
+        self.min_kl_loss = min_kl_loss
         self.num_bands = num_bands
         self.duration = duration
         self.use_noise = use_noise
@@ -24,6 +29,7 @@ class VAE_GAN(tf.keras.Model):
         self.loud_stride = loud_stride
         self.input_shape = input_shape
         self.hidden_dims = hidden_dims
+        self.epoch_print = epoch_print
         self.kernel_sizes = kernel_sizes
         self.residual_depth = residual_depth
         
@@ -135,24 +141,54 @@ class VAE_GAN(tf.keras.Model):
       reconstruction_losses = []
       kl_losses = []
 
+      best_loss = np.inf  # Melhor KL Loss observado
+      epochs_no_improve = 0  # Contador de épocas sem melhoria
+      early_stopping_triggered = False
+
       for epoch in range(epochs):
         curr_batch = 0
-        total_loss = 0; total_rec_loss = 0; total_kl_loss = 0
+        total_loss = 0
+        total_rec_loss = 0
+        total_kl_loss = 0
+
         for batch_data in dataset:
           loss, reconstruction_loss, kl_loss = self._train_step(batch_data, optimizer) 
           total_loss = total_loss + loss.numpy()
           total_rec_loss = total_rec_loss + reconstruction_loss.numpy()
           total_kl_loss = total_kl_loss + kl_loss.numpy()
-        '''
-          if self.batch_size != -1 and epoch % 15 == 0:
-            curr_batch += 1
-            print(f"\t[ Batch {curr_batch} / {int(data.shape[0]/self.batch_size)} | Loss: {loss.numpy()} |  Recon. Loss: {reconstruction_loss.numpy()} | KL Loss: {kl_loss.numpy()}]")
-        '''
-        if epoch % 15 == 0:
+
+        if epoch % self.epoch_print == 0:
             print(f"# [ Epoca {epoch+1} | Loss: {np.around(total_loss, 7)} |  Recon. Loss: {np.around(total_rec_loss, 7)} | KL Loss: {np.around(total_kl_loss, 7)}]") 
+
         reconstruction_losses.append(total_rec_loss)
         kl_losses.append(total_kl_loss)
         gc.collect()
+
+        # Calcula o KL loss médio para a época
+        avg_loss = total_loss / len(dataset)
+        avg_kl_loss = total_kl_loss / len(dataset)
+        
+        # Early stopping: Verifica se o Loss melhorou
+        if avg_loss < best_loss - self.delta:
+            best_loss = avg_loss
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+
+        # Early stopping: Verifica se o KL Loss está abaixo de min_kl_loss
+        if avg_kl_loss <= self.min_kl_loss:
+            print(f"[INFO] Early stopping ativado: KL Loss caiu abaixo de {self.min_kl_loss}.")
+            early_stopping_triggered = True
+            break
+
+        if epochs_no_improve >= self.patience:
+            print(f"[INFO] Early stopping ativado após {epoch+1} épocas sem melhoria no Loss geral.")
+            early_stopping_triggered = True
+            break
+
+      if not early_stopping_triggered:
+        print(f"[INFO] Treinamento concluído por {epochs} épocas.")
+
       return reconstruction_losses, kl_losses
 
     def _train_step(self, data, optimizer):
@@ -187,7 +223,7 @@ class VAE_GAN(tf.keras.Model):
             frobenius_loss = tf.sqrt(tf.reduce_sum(tf.square(stft_x_mag - stft_y_mag))) / tf.sqrt(tf.reduce_sum(tf.square(stft_x_mag)))
 
             # L1 Loss
-            l1_loss = tf.math.log(tf.reduce_mean(tf.abs(stft_x_mag - stft_y_mag)))
+            l1_loss = tf.math.log(tf.reduce_sum(tf.abs(stft_x_mag - stft_y_mag)) + 1e-6)
 
             # Retorna a soma das perdas
             return frobenius_loss + l1_loss
@@ -251,16 +287,9 @@ class VAE_GAN(tf.keras.Model):
                 # Armazenar perdas
                 generator_loss_epoch += gen_loss.numpy()
                 discriminator_loss_epoch += disc_loss.numpy()
-                
-                '''
-                if self.batch_size != -1 and epoch % 15 == 0:
-                    curr_batch += 1
-                    print(f"\t[ Batch {curr_batch} / {int(data.shape[0]/self.batch_size)} | "
-                        f"Generator Loss: {gen_loss.numpy()} | Discriminator Loss: {disc_loss.numpy()} ]")
-                '''
 
             # Perda por época
-            if epoch % 15 == 0:
+            if epoch % self.epoch_print == 0:
                 print(f"# [Epoca {epoch + 1} | Generator Loss: {generator_loss_epoch} | Discriminator Loss: {discriminator_loss_epoch}]")
             generator_losses.append(generator_loss_epoch)
             discriminator_losses.append(discriminator_loss_epoch)
